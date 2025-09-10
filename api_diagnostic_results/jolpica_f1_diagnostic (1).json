@@ -1,0 +1,818 @@
+{
+  "api_info": {
+    "base_url": "https://api.jolpi.ca/ergast/f1",
+    "name": "Jolpica-F1 API",
+    "priority": 1
+  },
+  "test_results": {
+    "race_results_recent": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2023/results.json?limit=50",
+      "data_available": true,
+      "sample_count": 6,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 50,
+        "total_records": "440",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "race_results_recent",
+        "samples": [
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "Verstappen",
+            "constructor": "Red Bull",
+            "position": "1",
+            "points": "25",
+            "status": "Finished"
+          },
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "P\u00e9rez",
+            "constructor": "Red Bull",
+            "position": "2",
+            "points": "18",
+            "status": "Finished"
+          },
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "Alonso",
+            "constructor": "Aston Martin",
+            "position": "3",
+            "points": "15",
+            "status": "Finished"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "P\u00e9rez",
+            "constructor": "Red Bull",
+            "position": "1",
+            "points": "25",
+            "status": "Finished"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "Verstappen",
+            "constructor": "Red Bull",
+            "position": "2",
+            "points": "19",
+            "status": "Finished"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "Alonso",
+            "constructor": "Aston Martin",
+            "position": "3",
+            "points": "15",
+            "status": "Finished"
+          }
+        ],
+        "fields_available": [
+          "number",
+          "position",
+          "positionText",
+          "points",
+          "Driver",
+          "Constructor",
+          "grid",
+          "laps",
+          "status",
+          "Time",
+          "FastestLap"
+        ],
+        "total_records": 3
+      }
+    },
+    "race_results_historical": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/1990/results.json?limit=50",
+      "data_available": true,
+      "sample_count": 6,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 50,
+        "total_records": "419",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "race_results_historical",
+        "samples": [
+          {
+            "race": "United States Grand Prix",
+            "driver": "Senna",
+            "constructor": "McLaren",
+            "position": "1",
+            "points": "9",
+            "status": "Finished"
+          },
+          {
+            "race": "United States Grand Prix",
+            "driver": "Alesi",
+            "constructor": "Tyrrell",
+            "position": "2",
+            "points": "6",
+            "status": "Finished"
+          },
+          {
+            "race": "United States Grand Prix",
+            "driver": "Boutsen",
+            "constructor": "Williams",
+            "position": "3",
+            "points": "4",
+            "status": "Finished"
+          },
+          {
+            "race": "Brazilian Grand Prix",
+            "driver": "Prost",
+            "constructor": "Ferrari",
+            "position": "1",
+            "points": "9",
+            "status": "Finished"
+          },
+          {
+            "race": "Brazilian Grand Prix",
+            "driver": "Berger",
+            "constructor": "McLaren",
+            "position": "2",
+            "points": "6",
+            "status": "Finished"
+          },
+          {
+            "race": "Brazilian Grand Prix",
+            "driver": "Senna",
+            "constructor": "McLaren",
+            "position": "3",
+            "points": "4",
+            "status": "Finished"
+          }
+        ],
+        "fields_available": [
+          "number",
+          "position",
+          "positionText",
+          "points",
+          "Driver",
+          "Constructor",
+          "grid",
+          "laps",
+          "status",
+          "Time"
+        ],
+        "total_records": 2
+      }
+    },
+    "driver_standings_recent": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2023/driverStandings.json",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "22",
+        "data_type": "standings_data"
+      },
+      "sample_data": {
+        "data_type": "driver_standings_recent",
+        "samples": [
+          {
+            "driver": "Verstappen",
+            "constructor": "Red Bull",
+            "position": "1",
+            "points": "575",
+            "wins": "19"
+          },
+          {
+            "driver": "P\u00e9rez",
+            "constructor": "Red Bull",
+            "position": "2",
+            "points": "285",
+            "wins": "2"
+          },
+          {
+            "driver": "Hamilton",
+            "constructor": "Mercedes",
+            "position": "3",
+            "points": "234",
+            "wins": "0"
+          },
+          {
+            "driver": "Alonso",
+            "constructor": "Aston Martin",
+            "position": "4",
+            "points": "206",
+            "wins": "0"
+          },
+          {
+            "driver": "Leclerc",
+            "constructor": "Ferrari",
+            "position": "5",
+            "points": "206",
+            "wins": "0"
+          }
+        ],
+        "fields_available": [
+          "position",
+          "positionText",
+          "points",
+          "wins",
+          "Driver",
+          "Constructors"
+        ],
+        "total_records": 22
+      }
+    },
+    "driver_standings_historical": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/1990/driverStandings.json",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "40",
+        "data_type": "standings_data"
+      },
+      "sample_data": {
+        "data_type": "driver_standings_historical",
+        "samples": [
+          {
+            "driver": "Senna",
+            "constructor": "McLaren",
+            "position": "1",
+            "points": "78",
+            "wins": "6"
+          },
+          {
+            "driver": "Prost",
+            "constructor": "Ferrari",
+            "position": "2",
+            "points": "71",
+            "wins": "5"
+          },
+          {
+            "driver": "Piquet",
+            "constructor": "Benetton",
+            "position": "3",
+            "points": "43",
+            "wins": "2"
+          },
+          {
+            "driver": "Berger",
+            "constructor": "McLaren",
+            "position": "4",
+            "points": "43",
+            "wins": "0"
+          },
+          {
+            "driver": "Mansell",
+            "constructor": "Ferrari",
+            "position": "5",
+            "points": "37",
+            "wins": "1"
+          }
+        ],
+        "fields_available": [
+          "position",
+          "positionText",
+          "points",
+          "wins",
+          "Driver",
+          "Constructors"
+        ],
+        "total_records": 30
+      }
+    },
+    "constructor_standings_recent": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2023/constructorStandings.json",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "10",
+        "data_type": "standings_data"
+      },
+      "sample_data": {
+        "data_type": "constructor_standings_recent",
+        "samples": [
+          {
+            "constructor": "Red Bull",
+            "position": "1",
+            "points": "860",
+            "wins": "21"
+          },
+          {
+            "constructor": "Mercedes",
+            "position": "2",
+            "points": "409",
+            "wins": "0"
+          },
+          {
+            "constructor": "Ferrari",
+            "position": "3",
+            "points": "406",
+            "wins": "1"
+          },
+          {
+            "constructor": "McLaren",
+            "position": "4",
+            "points": "302",
+            "wins": "0"
+          },
+          {
+            "constructor": "Aston Martin",
+            "position": "5",
+            "points": "280",
+            "wins": "0"
+          }
+        ],
+        "fields_available": [
+          "position",
+          "positionText",
+          "points",
+          "wins",
+          "Constructor"
+        ],
+        "total_records": 10
+      }
+    },
+    "constructor_standings_historical": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/1990/constructorStandings.json",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "19",
+        "data_type": "standings_data"
+      },
+      "sample_data": {
+        "data_type": "constructor_standings_historical",
+        "samples": [
+          {
+            "constructor": "McLaren",
+            "position": "1",
+            "points": "121",
+            "wins": "6"
+          },
+          {
+            "constructor": "Ferrari",
+            "position": "2",
+            "points": "110",
+            "wins": "6"
+          },
+          {
+            "constructor": "Benetton",
+            "position": "3",
+            "points": "71",
+            "wins": "2"
+          },
+          {
+            "constructor": "Williams",
+            "position": "4",
+            "points": "57",
+            "wins": "2"
+          },
+          {
+            "constructor": "Tyrrell",
+            "position": "5",
+            "points": "16",
+            "wins": "0"
+          }
+        ],
+        "fields_available": [
+          "position",
+          "positionText",
+          "points",
+          "wins",
+          "Constructor"
+        ],
+        "total_records": 19
+      }
+    },
+    "qualifying_recent": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2023/qualifying.json?limit=50",
+      "data_available": true,
+      "sample_count": 6,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "440",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "qualifying_recent",
+        "samples": [
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "Verstappen",
+            "position": "1",
+            "q1": "1:31.295",
+            "q2": "1:30.503",
+            "q3": "1:29.708"
+          },
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "P\u00e9rez",
+            "position": "2",
+            "q1": "1:31.479",
+            "q2": "1:30.746",
+            "q3": "1:29.846"
+          },
+          {
+            "race": "Bahrain Grand Prix",
+            "driver": "Leclerc",
+            "position": "3",
+            "q1": "1:31.094",
+            "q2": "1:30.282",
+            "q3": "1:30.000"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "P\u00e9rez",
+            "position": "1",
+            "q1": "1:29.244",
+            "q2": "1:28.635",
+            "q3": "1:28.265"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "Leclerc",
+            "position": "2",
+            "q1": "1:29.376",
+            "q2": "1:28.903",
+            "q3": "1:28.420"
+          },
+          {
+            "race": "Saudi Arabian Grand Prix",
+            "driver": "Alonso",
+            "position": "3",
+            "q1": "1:29.298",
+            "q2": "1:28.757",
+            "q3": "1:28.730"
+          }
+        ],
+        "fields_available": [
+          "number",
+          "position",
+          "Driver",
+          "Constructor",
+          "Q1",
+          "Q2",
+          "Q3"
+        ],
+        "total_records": 3
+      }
+    },
+    "qualifying_historical": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/1990/qualifying.json?limit=50",
+      "data_available": true,
+      "sample_count": 0,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "0",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "qualifying_historical",
+        "samples": [],
+        "fields_available": [],
+        "total_records": 0
+      }
+    },
+    "circuits": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/circuits.json?limit=100",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "77",
+        "data_type": "circuit_data"
+      },
+      "sample_data": {
+        "data_type": "circuits",
+        "samples": [
+          {
+            "circuitId": "adelaide",
+            "circuitName": "Adelaide Street Circuit",
+            "location": "Adelaide",
+            "country": "Australia",
+            "lat": "-34.9272",
+            "long": "138.617"
+          },
+          {
+            "circuitId": "ain-diab",
+            "circuitName": "Ain Diab",
+            "location": "Casablanca",
+            "country": "Morocco",
+            "lat": "33.5786",
+            "long": "-7.6875"
+          },
+          {
+            "circuitId": "aintree",
+            "circuitName": "Aintree",
+            "location": "Liverpool",
+            "country": "UK",
+            "lat": "53.4769",
+            "long": "-2.94056"
+          },
+          {
+            "circuitId": "albert_park",
+            "circuitName": "Albert Park Grand Prix Circuit",
+            "location": "Melbourne",
+            "country": "Australia",
+            "lat": "-37.8497",
+            "long": "144.968"
+          },
+          {
+            "circuitId": "americas",
+            "circuitName": "Circuit of the Americas",
+            "location": "Austin",
+            "country": "USA",
+            "lat": "30.1328",
+            "long": "-97.6411"
+          }
+        ],
+        "fields_available": [
+          "circuitId",
+          "url",
+          "circuitName",
+          "Location"
+        ],
+        "total_records": 77
+      }
+    },
+    "drivers": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/drivers.json?limit=100",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "864",
+        "data_type": "driver_data"
+      },
+      "sample_data": {
+        "data_type": "drivers",
+        "samples": [
+          {
+            "driverId": "abate",
+            "givenName": "Carlo",
+            "familyName": "Abate",
+            "nationality": "Italian",
+            "dateOfBirth": "1932-07-10"
+          },
+          {
+            "driverId": "abecassis",
+            "givenName": "George",
+            "familyName": "Abecassis",
+            "nationality": "British",
+            "dateOfBirth": "1913-03-21"
+          },
+          {
+            "driverId": "acheson",
+            "givenName": "Kenny",
+            "familyName": "Acheson",
+            "nationality": "British",
+            "dateOfBirth": "1957-11-27"
+          },
+          {
+            "driverId": "adams",
+            "givenName": "Philippe",
+            "familyName": "Adams",
+            "nationality": "Belgian",
+            "dateOfBirth": "1969-11-19"
+          },
+          {
+            "driverId": "ader",
+            "givenName": "Walt",
+            "familyName": "Ader",
+            "nationality": "American",
+            "dateOfBirth": "1913-12-15"
+          }
+        ],
+        "fields_available": [
+          "driverId",
+          "url",
+          "givenName",
+          "familyName",
+          "dateOfBirth",
+          "nationality"
+        ],
+        "total_records": 100
+      }
+    },
+    "constructors": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/constructors.json?limit=100",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "212",
+        "data_type": "constructor_data"
+      },
+      "sample_data": {
+        "data_type": "constructors",
+        "samples": [
+          {
+            "constructorId": "adams",
+            "name": "Adams",
+            "nationality": "American",
+            "url": "http://en.wikipedia.org/wiki/Adams_(constructor)"
+          },
+          {
+            "constructorId": "afm",
+            "name": "AFM",
+            "nationality": "German",
+            "url": "http://en.wikipedia.org/wiki/Alex_von_Falkenhausen_Motorenbau"
+          },
+          {
+            "constructorId": "ags",
+            "name": "AGS",
+            "nationality": "French",
+            "url": "http://en.wikipedia.org/wiki/Automobiles_Gonfaronnaises_Sportives"
+          },
+          {
+            "constructorId": "alfa",
+            "name": "Alfa Romeo",
+            "nationality": "Swiss",
+            "url": "http://en.wikipedia.org/wiki/Alfa_Romeo_in_Formula_One"
+          },
+          {
+            "constructorId": "alphatauri",
+            "name": "AlphaTauri",
+            "nationality": "Italian",
+            "url": "http://en.wikipedia.org/wiki/Scuderia_AlphaTauri"
+          }
+        ],
+        "fields_available": [
+          "constructorId",
+          "url",
+          "name",
+          "nationality"
+        ],
+        "total_records": 100
+      }
+    },
+    "seasons": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/seasons.json?limit=20",
+      "data_available": true,
+      "sample_count": 5,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "76"
+      },
+      "sample_data": {
+        "data_type": "seasons",
+        "samples": [
+          {
+            "season": "1965",
+            "url": "https://en.wikipedia.org/wiki/1965_Formula_One_season"
+          },
+          {
+            "season": "1966",
+            "url": "https://en.wikipedia.org/wiki/1966_Formula_One_season"
+          },
+          {
+            "season": "1967",
+            "url": "https://en.wikipedia.org/wiki/1967_Formula_One_season"
+          },
+          {
+            "season": "1968",
+            "url": "https://en.wikipedia.org/wiki/1968_Formula_One_season"
+          },
+          {
+            "season": "1969",
+            "url": "https://en.wikipedia.org/wiki/1969_Formula_One_season"
+          }
+        ],
+        "fields_available": [
+          "season",
+          "url"
+        ],
+        "total_records": 20
+      }
+    },
+    "pit_stops_2023": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2023/1/pitstops.json",
+      "data_available": true,
+      "sample_count": 0,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "50",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "pit_stops_2023",
+        "samples": [],
+        "fields_available": [],
+        "total_records": 1
+      }
+    },
+    "pit_stops_2022": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.jolpi.ca/ergast/f1/2022/1/pitstops.json",
+      "data_available": true,
+      "sample_count": 0,
+      "data_structure": {
+        "root_keys": [
+          "MRData"
+        ],
+        "data_format": "ergast_standard",
+        "has_pagination": true,
+        "estimated_total_records": 0,
+        "total_records": "58",
+        "data_type": "race_data"
+      },
+      "sample_data": {
+        "data_type": "pit_stops_2022",
+        "samples": [],
+        "fields_available": [],
+        "total_records": 1
+      }
+    }
+  },
+  "overall_success_rate": 100.0
+}

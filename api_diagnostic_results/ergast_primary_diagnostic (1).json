@@ -1,0 +1,80 @@
+{
+  "api_info": {
+    "base_url": "http://ergast.com/api/f1",
+    "name": "Ergast API (HTTP)",
+    "priority": 2
+  },
+  "test_results": {
+    "race_results_recent": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2023/results.json?limit=50",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "race_results_historical": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/1990/results.json?limit=50",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "driver_standings_recent": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2023/driverStandings.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "driver_standings_historical": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/1990/driverStandings.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "constructor_standings_recent": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2023/constructorStandings.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "constructor_standings_historical": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/1990/constructorStandings.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "qualifying_recent": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2023/qualifying.json?limit=50",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "qualifying_historical": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/1990/qualifying.json?limit=50",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "circuits": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/circuits.json?limit=100",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "drivers": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/drivers.json?limit=100",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "constructors": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/constructors.json?limit=100",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "seasons": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/seasons.json?limit=20",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "pit_stops_2023": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2023/1/pitstops.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    },
+    "pit_stops_2022": {
+      "status": "EXCEPTION",
+      "url": "http://ergast.com/api/f1/2022/1/pitstops.json",
+      "error": "Cannot connect to host ergast.com:80 ssl:default [Connect call failed ('185.229.21.74', 80)]"
+    }
+  },
+  "overall_success_rate": 0.0
+}

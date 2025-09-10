@@ -1,0 +1,41 @@
+{
+  "collection_timestamp": "2025-09-08T23:14:11.576397",
+  "system_version": "Enhanced F1 Data Collector v2.0",
+  "apis_used": [
+    "Jolpica-F1",
+    "OpenF1",
+    "FastF1"
+  ],
+  "total_records": 35231,
+  "collection_statistics": {
+    "api_calls": 869,
+    "successful_calls": 483,
+    "failed_calls": 14,
+    "retry_attempts": 384,
+    "total_records": 0
+  },
+  "files_saved": [
+    "race_results: 6,600 records",
+    "driver_standings: 195 records",
+    "constructor_standings: 89 records",
+    "qualifying_data: 600 records",
+    "drivers: 100 records",
+    "sessions: 7 records",
+    "drivers_modern: 139 records",
+    "laps_detailed: 1,996 records",
+    "weather_data: 772 records",
+    "fastf1_comprehensive: 24,557 records",
+    "driver_skills_comprehensive: 145 records",
+    "cars_2025: 10 records",
+    "tracks: 21 records"
+  ],
+  "api_success_rate": 55.58112773302647,
+  "enhancements": [
+    "Advanced concurrency control with semaphores",
+    "Intelligent retry logic with exponential backoff",
+    "Comprehensive error handling and logging",
+    "Enhanced skill calculation with 7 factors",
+    "Complete 2025 F1 specifications",
+    "Multi-source data validation"
+  ]
+}

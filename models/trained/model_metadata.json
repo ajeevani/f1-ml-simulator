@@ -1,0 +1,24 @@
+{
+  "training_timestamp": "2025-09-08T23:36:59.042488",
+  "individual_models": [
+    "random_forest",
+    "gradient_boosting",
+    "xgboost",
+    "lightgbm",
+    "extra_trees",
+    "ridge",
+    "svr"
+  ],
+  "ensemble_models": [
+    "gradient_boosting",
+    "xgboost",
+    "ridge",
+    "lightgbm",
+    "random_forest"
+  ],
+  "best_model": "gradient_boosting",
+  "model_versions": {
+    "individual_models_count": 7,
+    "ensemble_components": 5
+  }
+}

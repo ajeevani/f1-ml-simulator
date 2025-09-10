@@ -1,0 +1,386 @@
+{
+  "api_info": {
+    "base_url": "https://api.openf1.org/v1",
+    "name": "OpenF1 API",
+    "priority": 1
+  },
+  "test_results": {
+    "sessions": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.openf1.org/v1/sessions?session_key=9161",
+      "data_available": true,
+      "sample_count": 1,
+      "sample_data": {
+        "total_records": 1,
+        "samples": [
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "location": "Marina Bay",
+            "date_start": "2023-09-16T13:00:00+00:00",
+            "date_end": "2023-09-16T14:00:00+00:00",
+            "session_type": "Qualifying",
+            "session_name": "Qualifying",
+            "country_key": 157,
+            "country_code": "SGP",
+            "country_name": "Singapore",
+            "circuit_key": 61,
+            "circuit_short_name": "Singapore",
+            "gmt_offset": "08:00:00",
+            "year": 2023
+          }
+        ],
+        "fields_available": [
+          "meeting_key",
+          "session_key",
+          "location",
+          "date_start",
+          "date_end",
+          "session_type",
+          "session_name",
+          "country_key",
+          "country_code",
+          "country_name",
+          "circuit_key",
+          "circuit_short_name",
+          "gmt_offset",
+          "year"
+        ]
+      }
+    },
+    "drivers_openf1": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.openf1.org/v1/drivers?session_key=9161",
+      "data_available": true,
+      "sample_count": 20,
+      "sample_data": {
+        "total_records": 20,
+        "samples": [
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 1,
+            "broadcast_name": "M VERSTAPPEN",
+            "full_name": "Max VERSTAPPEN",
+            "name_acronym": "VER",
+            "team_name": "Red Bull Racing",
+            "team_colour": "3671C6",
+            "first_name": "Max",
+            "last_name": "Verstappen",
+            "headshot_url": "https://www.formula1.com/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png.transform/1col/image.png",
+            "country_code": "NED"
+          },
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 2,
+            "broadcast_name": "L SARGEANT",
+            "full_name": "Logan SARGEANT",
+            "name_acronym": "SAR",
+            "team_name": "Williams",
+            "team_colour": "37BEDD",
+            "first_name": "Logan",
+            "last_name": "Sargeant",
+            "headshot_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LOGSAR01_Logan_Sargeant/logsar01.png.transform/1col/image.png",
+            "country_code": "USA"
+          },
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 4,
+            "broadcast_name": "L NORRIS",
+            "full_name": "Lando NORRIS",
+            "name_acronym": "NOR",
+            "team_name": "McLaren",
+            "team_colour": "F58020",
+            "first_name": "Lando",
+            "last_name": "Norris",
+            "headshot_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png.transform/1col/image.png",
+            "country_code": "GBR"
+          }
+        ],
+        "fields_available": [
+          "meeting_key",
+          "session_key",
+          "driver_number",
+          "broadcast_name",
+          "full_name",
+          "name_acronym",
+          "team_name",
+          "team_colour",
+          "first_name",
+          "last_name",
+          "headshot_url",
+          "country_code"
+        ]
+      }
+    },
+    "laps": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.openf1.org/v1/laps?session_key=9161&driver_number=1",
+      "data_available": true,
+      "sample_count": 14,
+      "sample_data": {
+        "total_records": 14,
+        "samples": [
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 1,
+            "lap_number": 1,
+            "date_start": "2023-09-16T13:00:59.308000+00:00",
+            "duration_sector_1": null,
+            "duration_sector_2": 49.611,
+            "duration_sector_3": 42.252,
+            "i1_speed": 263,
+            "i2_speed": 255,
+            "is_pit_out_lap": true,
+            "lap_duration": null,
+            "segments_sector_1": [
+              2064,
+              2064,
+              2064,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049
+            ],
+            "segments_sector_2": [
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049
+            ],
+            "segments_sector_3": [
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2051,
+              2051,
+              2051
+            ],
+            "st_speed": null
+          },
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 1,
+            "lap_number": 2,
+            "date_start": "2023-09-16T13:03:04.650000+00:00",
+            "duration_sector_1": 27.348,
+            "duration_sector_2": 39.244,
+            "duration_sector_3": 26.27,
+            "i1_speed": 305,
+            "i2_speed": 276,
+            "is_pit_out_lap": false,
+            "lap_duration": 92.862,
+            "segments_sector_1": [
+              2051,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2049
+            ],
+            "segments_sector_2": [
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2051,
+              2049,
+              2049
+            ],
+            "segments_sector_3": [
+              2049,
+              2049,
+              2049,
+              2049,
+              2049,
+              2051,
+              2048
+            ],
+            "st_speed": 300
+          },
+          {
+            "meeting_key": 1219,
+            "session_key": 9161,
+            "driver_number": 1,
+            "lap_number": 3,
+            "date_start": "2023-09-16T13:04:37.351000+00:00",
+            "duration_sector_1": 49.824,
+            "duration_sector_2": 61.633,
+            "duration_sector_3": 40.268,
+            "i1_speed": 137,
+            "i2_speed": 164,
+            "is_pit_out_lap": false,
+            "lap_duration": 151.725,
+            "segments_sector_1": [
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048
+            ],
+            "segments_sector_2": [
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048
+            ],
+            "segments_sector_3": [
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048,
+              2048
+            ],
+            "st_speed": 226
+          }
+        ],
+        "fields_available": [
+          "meeting_key",
+          "session_key",
+          "driver_number",
+          "lap_number",
+          "date_start",
+          "duration_sector_1",
+          "duration_sector_2",
+          "duration_sector_3",
+          "i1_speed",
+          "i2_speed",
+          "is_pit_out_lap",
+          "lap_duration",
+          "segments_sector_1",
+          "segments_sector_2",
+          "segments_sector_3",
+          "st_speed"
+        ]
+      }
+    },
+    "positions": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.openf1.org/v1/position?session_key=9161&driver_number=1",
+      "data_available": true,
+      "sample_count": 68,
+      "sample_data": {
+        "total_records": 68,
+        "samples": [
+          {
+            "date": "2023-09-16T12:45:05.450000+00:00",
+            "session_key": 9161,
+            "meeting_key": 1219,
+            "driver_number": 1,
+            "position": 4
+          },
+          {
+            "date": "2023-09-16T13:00:02.184000+00:00",
+            "session_key": 9161,
+            "meeting_key": 1219,
+            "driver_number": 1,
+            "position": 5
+          },
+          {
+            "date": "2023-09-16T13:00:04.028000+00:00",
+            "session_key": 9161,
+            "meeting_key": 1219,
+            "driver_number": 1,
+            "position": 6
+          }
+        ],
+        "fields_available": [
+          "date",
+          "session_key",
+          "meeting_key",
+          "driver_number",
+          "position"
+        ]
+      }
+    },
+    "weather": {
+      "status": "SUCCESS",
+      "status_code": 200,
+      "url": "https://api.openf1.org/v1/weather?session_key=9161",
+      "data_available": true,
+      "sample_count": 110,
+      "sample_data": {
+        "total_records": 110,
+        "samples": [
+          {
+            "date": "2023-09-16T12:45:18.528000+00:00",
+            "session_key": 9161,
+            "pressure": 1009.2,
+            "track_temperature": 34.8,
+            "rainfall": 0,
+            "wind_speed": 1.7,
+            "meeting_key": 1219,
+            "wind_direction": 193,
+            "humidity": 77.0,
+            "air_temperature": 29.6
+          },
+          {
+            "date": "2023-09-16T12:46:18.527000+00:00",
+            "session_key": 9161,
+            "pressure": 1009.2,
+            "track_temperature": 34.8,
+            "rainfall": 0,
+            "wind_speed": 2.2,
+            "meeting_key": 1219,
+            "wind_direction": 193,
+            "humidity": 77.0,
+            "air_temperature": 29.6
+          },
+          {
+            "date": "2023-09-16T12:47:18.526000+00:00",
+            "session_key": 9161,
+            "pressure": 1009.2,
+            "track_temperature": 34.8,
+            "rainfall": 0,
+            "wind_speed": 2.4,
+            "meeting_key": 1219,
+            "wind_direction": 177,
+            "humidity": 77.0,
+            "air_temperature": 29.6
+          }
+        ],
+        "fields_available": [
+          "date",
+          "session_key",
+          "pressure",
+          "track_temperature",
+          "rainfall",
+          "wind_speed",
+          "meeting_key",
+          "wind_direction",
+          "humidity",
+          "air_temperature"
+        ]
+      }
+    }
+  },
+  "overall_success_rate": 100.0
+}
