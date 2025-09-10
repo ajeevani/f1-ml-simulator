@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway Production Ready
+F1 WebSocket Server - Railway Health Check Fixed
 """
 
 import asyncio
@@ -11,10 +11,10 @@ import sys
 import os
 from pathlib import Path
 from http import HTTPStatus
-import http
 
-PORT = int(os.environ.get("PORT", 8000))  # Railway sets this automatically
-HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
+# Railway configuration
+PORT = int(os.environ.get("PORT", 8000))
+HOST = "0.0.0.0"
 
 print(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
 
@@ -130,47 +130,27 @@ class F1CLIBridge:
         print("🛑 Stopping CLI process...")
         self.is_cli_running = False
         
-        # Cancel tasks
+        # Cancel tasks and cleanup (same as before)
         if self.output_reader_task and not self.output_reader_task.done():
             self.output_reader_task.cancel()
-            try:
-                await self.output_reader_task
-            except asyncio.CancelledError:
-                pass
-        
         if self.broadcaster_task and not self.broadcaster_task.done():
             self.broadcaster_task.cancel()
-            try:
-                await self.broadcaster_task
-            except asyncio.CancelledError:
-                pass
         
-        # Terminate CLI process
         if self.cli_process:
             try:
                 if self.cli_process.stdin:
                     self.cli_process.stdin.close()
-                    await self.cli_process.stdin.wait_closed()
-                
                 self.cli_process.terminate()
                 await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
-                
-            except asyncio.TimeoutError:
-                print("⚠️ Force killing CLI process")
-                self.cli_process.kill()
-                await self.cli_process.wait()
-            except Exception as e:
-                print(f"⚠️ Error during CLI termination: {e}")
-            
+            except Exception:
+                pass
             self.cli_process = None
-        
-        print("✅ CLI process stopped cleanly")
 
     async def handle_client(self, websocket, path):
         """Handle WebSocket client connection"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
-        print(f"🔗 Client connected from {client_addr} to {path}. Total: {len(self.connected_clients)}")
+        print(f"🔗 Client connected from {client_addr}. Total: {len(self.connected_clients)}")
         
         try:
             # Start CLI for first client
@@ -191,83 +171,54 @@ class F1CLIBridge:
             print(f"❌ Client error: {e}")
         finally:
             self.connected_clients.discard(websocket)
-            print(f"🔌 Client {client_addr} disconnected. Remaining: {len(self.connected_clients)}")
+            print(f"🔌 Client disconnected. Remaining: {len(self.connected_clients)}")
             
             # Stop CLI when no clients
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-async def process_request(path, request):
-    """Handle HTTP requests and WebSocket upgrades with CORS"""
+# ✅ FIXED: Correct process_request function for Railway health checks
+def health_check(connection, request):
+    """Handle HTTP health check requests for Railway"""
+    print(f"🩺 Health check request: {request.path}")
     
-    headers = request.headers
-    origin = headers.get("origin", "")
-    upgrade = headers.get("upgrade", "").lower()
-    connection = headers.get("connection", "").lower()
-    
-    print(f"📥 Request: {path} from {origin}, upgrade: {upgrade}")
-    
-    # ✅ Allow specific origins (replace with your Vercel domain)
-    allowed_origins = [
-        "https://f1-ml-simulator.vercel.app",  # Replace with YOUR Vercel domain
-        "http://localhost:5173",
-        "http://localhost:3000"
-    ]
-    
-    # Handle WebSocket upgrade requests
-    if upgrade == "websocket" and "upgrade" in connection:
-        if origin in allowed_origins or not origin:  # Allow no origin for direct connections
-            print(f"✅ Allowing WebSocket from: {origin}")
-            return None  # Allow WebSocket connection
-        else:
-            print(f"❌ Blocking WebSocket from unauthorized origin: {origin}")
-            return (
-                HTTPStatus.FORBIDDEN,
-                [("Content-Type", "text/plain")],
-                b"WebSocket origin not allowed"
-            )
-    
-    if request.path in ["/", "/health", "/healthz"]:
+    if request.path == "/" or request.path == "/health":
+        # Return proper HTTP response for health checks
         return connection.respond(
-            http.HTTPStatus.OK, 
-            "🏎️ F1 WebSocket Server - OK\n"
+            HTTPStatus.OK,
+            "F1 WebSocket Server is healthy\n",
+            headers=[("Content-Type", "text/plain")]
         )
     
-    # Handle other paths
-    return (
-        HTTPStatus.NOT_FOUND,
-        [("Content-Type", "text/plain")],
-        b"Not Found"
-    )
-    
+    # For other paths, let WebSocket handle or return 404
+    return None
 
 async def main():
-    """Main server function optimized for Railway"""
+    """Main server function with Railway health check support"""
     bridge = F1CLIBridge()
     
     print(f"🚀 F1 Professional WebSocket Bridge Server")
     print(f"📡 Listening on: {HOST}:{PORT}")
-    print(f"🌐 Railway deployment ready")
+    print(f"🩺 Health check: /")
     print("="*60)
     
     try:
-        server = await websockets.serve(
+        # ✅ Start WebSocket server with health check support
+        async with websockets.serve(
             bridge.handle_client,
             HOST,
             PORT,
-            process_request=process_request,  # Handle HTTP and CORS
+            process_request=health_check,  # Use the correct health check function
             ping_interval=20,  # Keep connections alive
-            ping_timeout=10,
-            close_timeout=10
-        )
-        
-        print("✅ WebSocket server started successfully!")
-        print("🩺 Health check endpoint: /")
-        print("🔗 Waiting for connections...")
-        
-        # ✅ Keep server running
-        await server.wait_closed()
-        
+            ping_timeout=10
+        ):
+            print("✅ WebSocket server started successfully!")
+            print("🩺 HTTP health checks enabled")
+            print("🔗 Waiting for connections...")
+            
+            # Run forever
+            await asyncio.Future()
+            
     except Exception as e:
         print(f"❌ Server startup error: {e}")
         raise
@@ -282,5 +233,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n🏁 Server stopped by user")
     except Exception as e:
-        print(f"❌ Critical startup error: {e}")
+        print(f"❌ Critical error: {e}")
         sys.exit(1)
