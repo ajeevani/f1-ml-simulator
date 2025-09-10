@@ -44,7 +44,7 @@ class F1CLIBridge:
             env['PYTHONIOENCODING'] = 'utf-8'
             
             self.cli_process = await asyncio.create_subprocess_exec(
-                sys.executable, "-u", "cli/main.py",
+                sys.executable, "-u", "../cli/main.py",
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
