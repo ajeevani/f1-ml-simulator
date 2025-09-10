@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
+"""
+F1 WebSocket Server - Fixed for websockets 15.0.1
+"""
 import asyncio
 import websockets
-from websockets.server import WebSocketServerProtocol
-from websockets.http import Response
 import subprocess
 import json
 import sys
 import os
+import http
 from pathlib import Path
 
 # Production configuration
@@ -30,10 +32,9 @@ class F1CLIBridge:
         """Start the F1 CLI process"""
         if self.is_cli_running:
             return True
-            
+
         try:
             print("🏎️ Starting F1 CLI process...")
-            
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
             env['PYTHONLEGACYWINDOWSSTDIO'] = '0'
@@ -55,7 +56,6 @@ class F1CLIBridge:
             self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
             
             return True
-            
         except Exception as e:
             print(f"❌ Error starting CLI: {e}")
             self.is_cli_running = False
@@ -68,13 +68,12 @@ class F1CLIBridge:
                 line_bytes = await self.cli_process.stdout.readline()
                 if not line_bytes:
                     break
-                
+                    
                 output = line_bytes.decode('utf-8', errors='replace')
                 await self.message_queue.put({
                     'type': 'output',
                     'data': output
                 })
-                
         except asyncio.CancelledError:
             print("📤 Output reader cancelled")
         except Exception as e:
@@ -90,10 +89,10 @@ class F1CLIBridge:
                     message = await asyncio.wait_for(self.message_queue.get(), timeout=1.0)
                 except asyncio.TimeoutError:
                     continue
-                
+
                 if not self.connected_clients:
                     continue
-                
+
                 json_message = json.dumps(message, ensure_ascii=False)
                 
                 # Send to all clients
@@ -133,24 +132,22 @@ class F1CLIBridge:
                 await self.output_reader_task
             except asyncio.CancelledError:
                 pass
-        
+
         if self.broadcaster_task and not self.broadcaster_task.done():
             self.broadcaster_task.cancel()
             try:
                 await self.broadcaster_task
             except asyncio.CancelledError:
                 pass
-        
+
         # Terminate CLI process
         if self.cli_process:
             try:
                 if self.cli_process.stdin:
                     self.cli_process.stdin.close()
                     await self.cli_process.stdin.wait_closed()
-                
                 self.cli_process.terminate()
                 await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
-                
             except asyncio.TimeoutError:
                 print("⚠️ Force killing CLI process")
                 self.cli_process.kill()
@@ -163,7 +160,7 @@ class F1CLIBridge:
         print("✅ CLI process stopped cleanly")
 
     async def handle_client(self, websocket, path=None):
-        """Handle WebSocket client connection with improved error handling"""
+        """Handle WebSocket client connection"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
         print(f"🔗 Client connected from {client_addr} to {path or '/'}. Total: {len(self.connected_clients)}")
@@ -202,78 +199,55 @@ class F1CLIBridge:
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-
-
-async def process_request(path, request_headers):
-    """Handle HTTP requests (health checks) and WebSocket upgrades"""
+# ✅ FIXED: Correct process_request for websockets 15.0.1
+def health_check(connection, request):
+    """Handle HTTP health check requests"""
+    print(f"🩺 Health check: {request.path}")
     
-    # Check if it's a WebSocket upgrade request
-    upgrade = request_headers.get("upgrade", "").lower()
-    connection = request_headers.get("connection", "").lower()
-    
-    # Allow WebSocket upgrades to proceed
-    if upgrade == "websocket" and "upgrade" in connection:
-        return None  # Let websockets library handle it
-    
-    # Handle HTTP requests (health checks, browser access)
-    if path == "/" or path == "/health":
-        body = b"<html><body><h1>F1 Professional WebSocket Bridge is running!</h1></body></html>"
-        
-        return Response(
-            status=200,
-            headers=[
-                ("Content-Type", "text/html"),
-                ("Content-Length", str(len(body))),
-                ("Access-Control-Allow-Origin", "*")
-            ],
-            body=body
+    if request.path in ["/", "/health", "/healthz"]:
+        return connection.respond(
+            http.HTTPStatus.OK, 
+            "🏎️ F1 WebSocket Server - OK\n"
         )
     
     # Return 404 for other paths
-    error_body = b"404 Not Found"
-    return Response(
-        status=404,
-        headers=[
-            ("Content-Type", "text/plain"),
-            ("Content-Length", str(len(error_body)))
-        ],
-        body=error_body
+    return connection.respond(
+        http.HTTPStatus.NOT_FOUND,
+        "404 Not Found\n"
     )
 
 async def main():
     """Main server function"""
     bridge = F1CLIBridge()
-    # Add this at the start of main()
-    print(f"🔧 Environment PORT: {os.environ.get('PORT', 'Not set')}")
-    print(f"🔧 Using PORT: {PORT}")
-    print(f"🔧 Using HOST: {HOST}")
-
     
+    print("🔧 Environment PORT:", os.environ.get('PORT', 'Not set'))
+    print("🔧 Using PORT:", PORT)
+    print("🔧 Using HOST:", HOST)
+    print()
     print("🚀 F1 Professional WebSocket Bridge Server")
     print(f"📡 WebSocket: {HOST}:{PORT}")
-    print(f"🩺 Health Check: http://{HOST}:{PORT}/")
+    print(f"🩺 Health Check: http://{HOST}:{PORT}/health")
     print("=" * 56)
     
     try:
-        # Create the websocket server
-        server = await websockets.serve(
+        # Create the websocket server with correct parameters for 15.0.1
+        async with websockets.serve(
             bridge.handle_client,
             HOST,
             PORT,
-            process_request=process_request,
-            # Add these for Railway compatibility
+            process_request=health_check,
+            # Railway compatibility settings
             ping_interval=20,
             ping_timeout=10,
             close_timeout=10
-        )
-        
-        print("✅ WebSocket server ready!")
-        print("🩺 HTTP health checks enabled")
-        print("🌐 Waiting for connections...")
-        
-        # Keep server running
-        await server.wait_closed()
-        
+        ) as server:
+            print("✅ WebSocket server ready!")
+            print("🩺 HTTP health checks enabled")
+            print("🌐 Waiting for connections...")
+            
+            # Keep server running
+            await server.wait_closed()
+            
     except Exception as e:
         print(f"❌ Server startup error: {e}")
         raise
