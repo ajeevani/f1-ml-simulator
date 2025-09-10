@@ -21,7 +21,7 @@ const Terminal = () => {
   const inputRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
-  const GITHUB_URL = 'https://github.com/YOUR_USERNAME/f1-ml-simulator';
+  const GITHUB_URL = 'https://github.com/ajeevani/f1-ml-simulator';
 
   const connectToBackend = () => {
     if (wsRef.current) {
