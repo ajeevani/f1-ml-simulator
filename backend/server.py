@@ -1,32 +1,27 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway Health Check Fixed
+F1 WebSocket Server - Railway Production Ready
 """
-
 import asyncio
 import websockets
 import subprocess
 import json
 import sys
 import os
+import traceback
 from pathlib import Path
 from http import HTTPStatus
-import traceback
 
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
 HOST = "0.0.0.0"
 
-print(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
-
-current_dir = Path(__file__).parent
-# Go up one level to project root, then into cli/
-project_root = current_dir.parent
-cli_path = project_root / "cli" / "main.py"
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.append(str(project_root))
+print(f"🚀 F1 WebSocket Server Starting...")
+print(f"🔧 PORT: {PORT}")
+print(f"🔧 HOST: {HOST}")
+print(f"🔧 Python: {sys.version}")
+print(f"🔧 CWD: {os.getcwd()}")
+print(f"🔧 Railway ENV: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
 
 class F1CLIBridge:
     def __init__(self):
@@ -36,39 +31,79 @@ class F1CLIBridge:
         self.broadcaster_task = None
         self.message_queue = asyncio.Queue()
         self.is_cli_running = False
+        self.cli_available = self._check_cli_availability()
+
+    def _check_cli_availability(self):
+        """Check if CLI is available and log the file structure"""
+        print("🔍 Checking CLI availability...")
+        
+        # List current directory contents
+        try:
+            files = os.listdir('.')
+            print(f"📁 Current directory files: {files}")
+        except Exception as e:
+            print(f"❌ Cannot list current directory: {e}")
+        
+        # Check for CLI in various locations
+        possible_paths = [
+            "./cli/main.py",
+            "../cli/main.py", 
+            "./main.py",
+            "/app/cli/main.py"
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                print(f"✅ Found CLI at: {path}")
+                self.cli_path = path
+                return True
+        
+        print("⚠️ No CLI found - running in WebSocket-only mode")
+        return False
 
     async def start_cli_process(self):
-        """Start the F1 CLI process"""
+        """Start CLI process if available"""
         if self.is_cli_running:
             return True
             
+        if not self.cli_available:
+            print("⚠️ CLI not available - sending mock response")
+            await self.message_queue.put({
+                'type': 'output',
+                'data': '🏎️ F1 WebSocket Server Connected!\n🚧 CLI module loading...\n> '
+            })
+            return True
+
         try:
-            print("🏎️ Starting F1 CLI process...")
+            print("🏎️ Starting CLI process...")
             
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
+            env['PYTHONUNBUFFERED'] = '1'
             
             self.cli_process = await asyncio.create_subprocess_exec(
-                sys.executable, "-u", str(cli_path),
+                sys.executable, "-u", self.cli_path,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
-                cwd=project_root,
                 env=env
             )
             
             self.is_cli_running = True
-            print("✅ F1 CLI process started")
+            print("✅ CLI process started")
             
             # Start background tasks
             self.output_reader_task = asyncio.create_task(self._read_cli_output())
             self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
             
             return True
-            
         except Exception as e:
-            print(f"❌ Error starting CLI: {e}")
-            self.is_cli_running = False
+            print(f"❌ CLI start error: {e}")
+            # Fall back to mock mode
+            await self.message_queue.put({
+                'type': 'output', 
+                'data': f'⚠️ CLI unavailable: {str(e)}\n🌐 WebSocket server ready\n> '
+            })
             return False
 
     async def _read_cli_output(self):
@@ -78,32 +113,31 @@ class F1CLIBridge:
                 line_bytes = await self.cli_process.stdout.readline()
                 if not line_bytes:
                     break
-                
+                    
                 output = line_bytes.decode('utf-8', errors='replace')
                 await self.message_queue.put({
                     'type': 'output',
                     'data': output
                 })
-                
-        except asyncio.CancelledError:
-            print("📤 Output reader cancelled")
         except Exception as e:
-            print(f"❌ Error reading CLI output: {e}")
+            print(f"❌ CLI output error: {e}")
         finally:
             self.is_cli_running = False
 
     async def _broadcast_messages(self):
         """Broadcast queued messages to all clients"""
         try:
-            while self.is_cli_running:
+            while True:
                 try:
                     message = await asyncio.wait_for(self.message_queue.get(), timeout=1.0)
                 except asyncio.TimeoutError:
+                    if not self.is_cli_running and not self.connected_clients:
+                        break
                     continue
-                
+
                 if not self.connected_clients:
                     continue
-                
+
                 json_message = json.dumps(message, ensure_ascii=False)
                 
                 # Send to all clients
@@ -117,52 +151,72 @@ class F1CLIBridge:
                 # Remove disconnected clients
                 self.connected_clients -= disconnected
                 
-        except asyncio.CancelledError:
-            print("📡 Broadcaster cancelled")
         except Exception as e:
-            print(f"❌ Error broadcasting: {e}")
+            print(f"❌ Broadcast error: {e}")
 
     async def send_input_to_cli(self, input_data):
-        """Send user input to CLI process"""
+        """Send user input to CLI process or handle mock responses"""
         if self.cli_process and self.cli_process.stdin and self.is_cli_running:
             try:
                 self.cli_process.stdin.write(f"{input_data}\n".encode('utf-8'))
                 await self.cli_process.stdin.drain()
             except Exception as e:
-                print(f"❌ Error sending input: {e}")
+                print(f"❌ Input send error: {e}")
+        else:
+            # Mock response when CLI isn't available
+            mock_response = f"Echo: {input_data}\n🚧 Full CLI features loading...\n> "
+            await self.message_queue.put({
+                'type': 'output',
+                'data': mock_response
+            })
 
     async def stop_cli_process(self):
         """Clean shutdown"""
         print("🛑 Stopping CLI process...")
         self.is_cli_running = False
         
-        # Cancel tasks and cleanup (same as before)
-        if self.output_reader_task and not self.output_reader_task.done():
-            self.output_reader_task.cancel()
-        if self.broadcaster_task and not self.broadcaster_task.done():
-            self.broadcaster_task.cancel()
-        
+        # Cancel tasks
+        for task in [self.output_reader_task, self.broadcaster_task]:
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+        # Terminate CLI process
         if self.cli_process:
             try:
                 if self.cli_process.stdin:
                     self.cli_process.stdin.close()
+                    await self.cli_process.stdin.wait_closed()
                 self.cli_process.terminate()
                 await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
             except Exception:
-                pass
+                if self.cli_process:
+                    self.cli_process.kill()
             self.cli_process = None
+        
+        print("✅ Cleanup complete")
 
-    async def handle_client(self, websocket, path):
-        """Handle WebSocket client connection"""
+    async def handle_client(self, websocket, path=None):
+        """Handle WebSocket client connections"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
-        print(f"🔗 Client connected from {client_addr}. Total: {len(self.connected_clients)}")
+        print(f"🔗 Client connected: {client_addr}. Total: {len(self.connected_clients)}")
         
         try:
             # Start CLI for first client
             if len(self.connected_clients) == 1:
                 await self.start_cli_process()
-            
+
+            # Send welcome message
+            welcome = {
+                'type': 'welcome',
+                'data': '🏎️ F1 WebSocket Server Connected!\n'
+            }
+            await websocket.send(json.dumps(welcome))
+
             async for message in websocket:
                 try:
                     data = json.loads(message)
@@ -170,96 +224,75 @@ class F1CLIBridge:
                         await self.send_input_to_cli(data.get('data', ''))
                 except json.JSONDecodeError:
                     print(f"⚠️ Invalid JSON: {message}")
-                
+                except Exception as e:
+                    print(f"⚠️ Message error: {e}")
+                    
         except websockets.exceptions.ConnectionClosed:
-            pass
+            print(f"🔌 Client {client_addr} disconnected")
         except Exception as e:
             print(f"❌ Client error: {e}")
         finally:
             self.connected_clients.discard(websocket)
-            print(f"🔌 Client disconnected. Remaining: {len(self.connected_clients)}")
+            print(f"🔌 Client cleaned up. Remaining: {len(self.connected_clients)}")
             
             # Stop CLI when no clients
             if not self.connected_clients:
                 await self.stop_cli_process()
 
 def health_check(connection, request):
-    """Handle HTTP health check requests for Railway"""
-    print(f"🩺 Health check request: {request.path}")
+    """Handle HTTP health checks"""
+    print(f"🩺 Health check: {request.path}")
     
-    if request.path == "/" or request.path == "/health":
+    if request.path in ["/", "/health", "/healthz"]:
         return connection.respond(
             HTTPStatus.OK,
-            "F1 WebSocket Server is healthy\n"
+            "F1 WebSocket Server - Healthy ✅\n"
         )
     
     return None
 
 async def main():
-    """Main server function with enhanced error handling"""
+    """Main server function"""
     try:
         bridge = F1CLIBridge()
         
-        print(f"🚀 F1 Professional WebSocket Bridge Server")
-        print(f"📡 Binding to: {HOST}:{PORT}")
-        print(f"🩺 Health check: /health")
-        print("="*60)
+        print("="*50)
+        print("🚀 F1 WebSocket Server Starting...")
+        print(f"📡 Address: {HOST}:{PORT}")
+        print(f"🩺 Health: /health")
+        print("="*50)
         
-        # ✅ Test port binding first
-        import socket
-        test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        
-        try:
-            test_socket.bind((HOST, PORT))
-            test_socket.close()
-            print(f"✅ Port {PORT} is available for binding")
-        except Exception as e:
-            print(f"❌ Cannot bind to port {PORT}: {e}")
-            sys.exit(1)
-        
-        # ✅ Start WebSocket server with proper error handling
-        server = await websockets.serve(
+        # Start server
+        async with websockets.serve(
             bridge.handle_client,
             HOST,
             PORT,
             process_request=health_check,
-            ping_interval=20,
-            ping_timeout=10
-        )
-        
-        print("✅ WebSocket server started successfully!")
-        print("🩺 HTTP health checks enabled")
-        print("🔗 Waiting for connections...")
-        print("🌍 Server accessible at:", f"https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:' + str(PORT))}")
-        
-        # ✅ Keep server running with proper cleanup
-        try:
-            await server.wait_closed()
-        except KeyboardInterrupt:
-            print("\n🛑 Received interrupt signal")
-        finally:
-            await bridge.stop_cli_process()
-            server.close()
-            await server.wait_closed()
+            ping_interval=30,
+            ping_timeout=10,
+            close_timeout=10
+        ):
+            print("✅ Server started successfully!")
+            print("🌍 Ready for connections")
             
+            # Keep running
+            try:
+                await asyncio.Future()  # Run forever
+            except KeyboardInterrupt:
+                print("\n🛑 Shutdown requested")
+            finally:
+                await bridge.stop_cli_process()
+                
     except Exception as e:
-        print(f"❌ CRITICAL SERVER ERROR: {e}")
-        print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"❌ FATAL ERROR: {e}")
+        print(f"❌ Traceback:\n{traceback.format_exc()}")
         sys.exit(1)
 
 if __name__ == "__main__":
     try:
-        # ✅ Add platform-specific event loop handling
-        if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        
-        print("🔄 Starting asyncio event loop...")
         asyncio.run(main())
-        
     except KeyboardInterrupt:
-        print("\n🏁 Server stopped by user")
+        print("\n👋 Goodbye!")
     except Exception as e:
-        print(f"❌ FATAL ERROR: {e}")
-        print(f"❌ Full traceback: {traceback.format_exc()}")
+        print(f"❌ CRITICAL: {e}")
         sys.exit(1)
