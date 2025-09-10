@@ -43,7 +43,7 @@ const Terminal = () => {
     setOutput('🔗 Connecting to F1 Professional Simulator...\n');
 
     try {
-      const ws = new WebSocket('ws://localhost:8765');
+      const ws = new WebSocket('ws://0.0.0.0:8765');
       wsRef.current = ws;
 
       ws.onopen = () => {
