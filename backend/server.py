@@ -11,6 +11,7 @@ import sys
 import os
 from pathlib import Path
 from http import HTTPStatus
+import traceback
 
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
@@ -182,55 +183,78 @@ def health_check(connection, request):
     print(f"🩺 Health check request: {request.path}")
     
     if request.path == "/" or request.path == "/health":
-        # Return proper HTTP response for health checks
         return connection.respond(
             HTTPStatus.OK,
             "F1 WebSocket Server is healthy\n"
         )
     
-    # For other paths, let WebSocket handle or return 404
     return None
 
-
 async def main():
-    """Main server function with Railway health check support"""
-    bridge = F1CLIBridge()
-    
-    print(f"🚀 F1 Professional WebSocket Bridge Server")
-    print(f"📡 Listening on: {HOST}:{PORT}")
-    print(f"🩺 Health check: /")
-    print("="*60)
-    
+    """Main server function with enhanced error handling"""
     try:
-        # ✅ Start WebSocket server with health check support
-        async with websockets.serve(
+        bridge = F1CLIBridge()
+        
+        print(f"🚀 F1 Professional WebSocket Bridge Server")
+        print(f"📡 Binding to: {HOST}:{PORT}")
+        print(f"🩺 Health check: /health")
+        print("="*60)
+        
+        # ✅ Test port binding first
+        import socket
+        test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        test_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
+        try:
+            test_socket.bind((HOST, PORT))
+            test_socket.close()
+            print(f"✅ Port {PORT} is available for binding")
+        except Exception as e:
+            print(f"❌ Cannot bind to port {PORT}: {e}")
+            sys.exit(1)
+        
+        # ✅ Start WebSocket server with proper error handling
+        server = await websockets.serve(
             bridge.handle_client,
             HOST,
             PORT,
-            process_request=health_check,  # Use the correct health check function
-            ping_interval=20,  # Keep connections alive
+            process_request=health_check,
+            ping_interval=20,
             ping_timeout=10
-        ):
-            print("✅ WebSocket server started successfully!")
-            print("🩺 HTTP health checks enabled")
-            print("🔗 Waiting for connections...")
-            
-            # Run forever
-            await asyncio.Future()
+        )
+        
+        print("✅ WebSocket server started successfully!")
+        print("🩺 HTTP health checks enabled")
+        print("🔗 Waiting for connections...")
+        print("🌍 Server accessible at:", f"https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:' + str(PORT))}")
+        
+        # ✅ Keep server running with proper cleanup
+        try:
+            await server.wait_closed()
+        except KeyboardInterrupt:
+            print("\n🛑 Received interrupt signal")
+        finally:
+            await bridge.stop_cli_process()
+            server.close()
+            await server.wait_closed()
             
     except Exception as e:
-        print(f"❌ Server startup error: {e}")
-        raise
+        print(f"❌ CRITICAL SERVER ERROR: {e}")
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     try:
+        # ✅ Add platform-specific event loop handling
         if sys.platform == 'win32':
             asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
         
+        print("🔄 Starting asyncio event loop...")
         asyncio.run(main())
         
     except KeyboardInterrupt:
         print("\n🏁 Server stopped by user")
     except Exception as e:
-        print(f"❌ Critical error: {e}")
+        print(f"❌ FATAL ERROR: {e}")
+        print(f"❌ Full traceback: {traceback.format_exc()}")
         sys.exit(1)
