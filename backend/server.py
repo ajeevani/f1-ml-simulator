@@ -11,6 +11,7 @@ import sys
 import os
 from pathlib import Path
 from http import HTTPStatus
+import http
 
 PORT = int(os.environ.get("PORT", 8000))  # Railway sets this automatically
 HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
@@ -226,26 +227,10 @@ async def process_request(path, request):
                 b"WebSocket origin not allowed"
             )
     
-    if path == "/" or path == "/health":
-        return (
-            HTTPStatus.OK,
-            [
-                ("Content-Type", "text/html"),
-                ("Access-Control-Allow-Origin", "*"),
-                ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
-                ("Access-Control-Allow-Headers", "Content-Type, Origin"),
-            ],
-            f"""<!DOCTYPE html>
-<html>
-<head><title>F1 WebSocket Server</title></head>
-<body>
-    <h1>🏎️ F1 Professional WebSocket Server</h1>
-    <p>✅ Server is running on Railway</p>
-    <p>📡 Port: {PORT}</p>
-    <p>🔌 WebSocket URL: wss://this-domain</p>
-    <p>🩺 Health check: OK</p>
-</body>
-</html>""".encode('utf-8')
+    if request.path in ["/", "/health", "/healthz"]:
+        return connection.respond(
+            http.HTTPStatus.OK, 
+            "🏎️ F1 WebSocket Server - OK\n"
         )
     
     # Handle other paths
@@ -254,6 +239,7 @@ async def process_request(path, request):
         [("Content-Type", "text/plain")],
         b"Not Found"
     )
+    
 
 async def main():
     """Main server function optimized for Railway"""
