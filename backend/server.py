@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Bridge Server - Clean Shutdown Version
+F1 WebSocket Server - Fixed Method Binding
 """
 
 import asyncio
@@ -10,13 +10,15 @@ import json
 import sys
 import os
 from pathlib import Path
+from http import HTTPStatus
+
+# Production configuration
+PORT = int(os.environ.get("PORT", 8765))
+HOST = "0.0.0.0"
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
-
-PORT = int(os.environ.get("PORT", 8765))
-HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
 
 class F1CLIBridge:
     def __init__(self):
@@ -123,7 +125,7 @@ class F1CLIBridge:
                 print(f"❌ Error sending input: {e}")
 
     async def stop_cli_process(self):
-        """✅ SIMPLIFIED: Clean shutdown without complex coordination"""
+        """Clean shutdown"""
         print("🛑 Stopping CLI process...")
         self.is_cli_running = False
         
@@ -163,17 +165,16 @@ class F1CLIBridge:
         
         print("✅ CLI process stopped cleanly")
 
-    async def handle_client(self, websocket):
-        """Handle WebSocket client connection"""
+    async def handle_client(self, websocket, path=None):
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
-        print(f"🔗 Client connected from {client_addr}. Total: {len(self.connected_clients)}")
-        
-        # Start CLI for first client
-        if len(self.connected_clients) == 1:
-            await self.start_cli_process()
+        print(f"🔗 Client connected from {client_addr} to {path or 'unknown'}. Total: {len(self.connected_clients)}")
         
         try:
+            # Start CLI for first client
+            if len(self.connected_clients) == 1:
+                await self.start_cli_process()
+
             async for message in websocket:
                 try:
                     data = json.loads(message)
@@ -181,7 +182,6 @@ class F1CLIBridge:
                         await self.send_input_to_cli(data.get('data', ''))
                 except json.JSONDecodeError:
                     print(f"⚠️ Invalid JSON: {message}")
-                
         except websockets.exceptions.ConnectionClosed:
             pass
         except Exception as e:
@@ -194,31 +194,75 @@ class F1CLIBridge:
             if not self.connected_clients:
                 await self.stop_cli_process()
 
+
+# ✅ CORRECT: Handle Request object for websockets v15.0.1
+async def process_request(path, request):
+    """Handle HTTP requests from health checkers"""
+    
+    # Access headers through request.headers
+    headers = request.headers
+    
+    upgrade = headers.get("upgrade", "").lower()
+    connection = headers.get("connection", "").lower()
+    
+    # If it's a proper WebSocket upgrade request, let it through
+    if upgrade == "websocket" and "upgrade" in connection:
+        return None  # Let websockets library handle it
+    
+    # Handle HTTP requests (health checks, browser access, etc.)
+    if path == "/" or path == "/health":
+        return (
+            HTTPStatus.OK,
+            [
+                ("Content-Type", "text/html"),
+                ("Access-Control-Allow-Origin", "*")
+            ],
+            b"<html><body><h1>F1 WebSocket Bridge Server is running!</h1></body></html>"
+        )
+    
+    # For all other paths
+    return (
+        HTTPStatus.NOT_FOUND,
+        [("Content-Type", "text/plain")],
+        b"404 Not Found"
+    )
+
 async def main():
-    """Main server function configured for Railway"""
+    """Main server function"""
     bridge = F1CLIBridge()
     
     print("🚀 F1 Professional WebSocket Bridge Server")
-    print(f"📡 Server: {HOST}:{PORT}")
-    print("="*60)
+    print(f"📡 WebSocket: {HOST}:{PORT}")
+    print(f"🩺 Health Check: http://{HOST}:{PORT}/")
+    print("=" * 56)
+    
+    # Create the websocket server with proper handler binding
+    server = await websockets.serve(
+        bridge.handle_client,  # This will work with the updated signature
+        HOST,
+        PORT,
+        process_request=process_request
+    )
+    
+    print("✅ WebSocket server ready!")
+    print("🩺 HTTP health checks enabled")
+    print("🌐 Waiting for connections...")
     
     try:
-        # ✅ Use Railway's HOST and PORT
-        async with websockets.serve(bridge.handle_client, HOST, PORT):
-            print("✅ WebSocket server ready!")
-            print("🌐 Waiting for connections...")
-            
-            await asyncio.Future()
-            
-    except Exception as e:
-        print(f"❌ Server error: {e}")
+        await server.wait_closed()
+    except KeyboardInterrupt:
+        print("\n🛑 Shutting down server...")
+    finally:
+        await bridge.stop_cli_process()
+        server.close()
+        await server.wait_closed()
+        print("✅ Server shutdown complete")
 
 if __name__ == "__main__":
     try:
-        if sys.platform == 'win32':
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-        
         asyncio.run(main())
-        
     except KeyboardInterrupt:
-        print("\n🏁 Server stopped by user")
+        print("\n👋 Goodbye!")
+    except Exception as e:
+        print(f"❌ Server error: {e}")
+        sys.exit(1)
