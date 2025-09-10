@@ -19,6 +19,11 @@ HOST = "0.0.0.0"
 
 print(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
 
+current_dir = Path(__file__).parent
+# Go up one level to project root, then into cli/
+project_root = current_dir.parent
+cli_path = project_root / "cli" / "main.py"
+
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
@@ -44,7 +49,7 @@ class F1CLIBridge:
             env['PYTHONIOENCODING'] = 'utf-8'
             
             self.cli_process = await asyncio.create_subprocess_exec(
-                sys.executable, "-u", "../cli/main.py",
+                sys.executable, "-u", str(cli_path),
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
