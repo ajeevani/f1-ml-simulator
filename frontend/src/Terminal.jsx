@@ -24,42 +24,34 @@ const Terminal = () => {
   const GITHUB_URL = 'https://github.com/ajeevani/f1-ml-simulator';
 
   const connectToBackend = () => {
-    if (wsRef.current) {
-      wsRef.current.onopen = null;
-      wsRef.current.onmessage = null;
-      wsRef.current.onclose = null;
-      wsRef.current.onerror = null;
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-
-    // Reset message tracking
-    setMessageHashes(new Set());
-    setOutput('🔗 Connecting to F1 Professional Simulator...\n');
-
-    try {
       const wsUrl = process.env.NODE_ENV === 'production' 
-        ? 'wss://f1-ml-simulator-production.up.railway.app'  // Replace with YOUR Railway domain
+        ? 'wss://f1-ml-simulator-production.up.railway.app'  // Your Railway domain here
         : 'ws://localhost:8765';
       
-      console.log('🔗 Attempting to connect to:', wsUrl);
+      console.log('🔗 Connecting to:', wsUrl);
       
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
-      
+
       ws.onopen = () => {
         console.log('✅ Connected to Railway backend');
         setConnected(true);
       };
-      
+
       ws.onerror = (error) => {
         console.error('❌ WebSocket connection failed:', error);
+        setConnected(false);
       };
+
+      ws.onclose = (event) => {
+        console.log('🔌 Connection closed:', event.code, event.reason);
+        setConnected(false);
+      };
+
 
       ws.onmessage = (event) => {
         const currentTime = Date.now();
@@ -142,11 +134,6 @@ const Terminal = () => {
         setOutput(prev => prev + '❌ Connection failed.\n');
         setOutput(prev => prev + 'Ensure backend is running: python backend/server.py\n');
       };
-
-    } catch (error) {
-      setOutput(prev => prev + `❌ Connection error: ${error.message}\n`);
-      setConnected(false);
-    }
   };
 
   useEffect(() => {

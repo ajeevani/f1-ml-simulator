@@ -1,82 +1,25 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Fixed for websockets 15.0.1
+F1 WebSocket Server - Railway Production Ready
 """
+
 import asyncio
 import websockets
 import subprocess
 import json
 import sys
 import os
-import http
 from pathlib import Path
 from http import HTTPStatus
 
-# ✅ CRITICAL: Use Railway's assigned port
-PORT = int(os.environ.get("PORT", 8765))  # Railway sets PORT environment variable
+PORT = int(os.environ.get("PORT", 8000))  # Railway sets this automatically
 HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
 
-print(f"🚀 Server starting on {HOST}:{PORT}")
-print(f"📡 WebSocket URL will be: wss://f1-ml-simulator-production.up.railway.app")
+print(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
 
-async def process_request(path, request):
-    """Handle HTTP requests and CORS for WebSocket connections"""
-    
-    headers = request.headers
-    origin = headers.get("origin", "")
-    
-    # ✅ Allow connections from your Vercel frontend
-    allowed_origins = [
-        "https://f1-ml-simulator.vercel.app",  # Replace with YOUR Vercel domain
-        "http://localhost:5173",             # Local development
-        "http://localhost:3000",             # Alternative local port
-    ]
-    
-    upgrade = headers.get("upgrade", "").lower()
-    connection = headers.get("connection", "").lower()
-    
-    # Handle WebSocket upgrade requests
-    if upgrade == "websocket" and "upgrade" in connection:
-        # ✅ Validate origin for security
-        if origin in allowed_origins:
-            print(f"✅ Allowing WebSocket connection from: {origin}")
-            return None  # Allow the connection
-        else:
-            print(f"❌ Blocking WebSocket connection from unauthorized origin: {origin}")
-            return (
-                HTTPStatus.FORBIDDEN,
-                [("Content-Type", "text/plain")],
-                b"Origin not allowed"
-            )
-    
-    # Handle HTTP requests (health checks, browser visits)
-    if path == "/" or path == "/health":
-        return (
-            HTTPStatus.OK,
-            [
-                ("Content-Type", "text/html"),
-                ("Access-Control-Allow-Origin", "*"),
-                ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
-                ("Access-Control-Allow-Headers", "Content-Type"),
-            ],
-            f"""<!DOCTYPE html>
-<html>
-<head><title>F1 WebSocket Server</title></head>
-<body>
-    <h1>🏎️ F1 Professional WebSocket Server</h1>
-    <p>✅ Server is running on Railway</p>
-    <p>🔌 WebSocket URL: wss://this-domain</p>
-    <p>📡 Connect from your React app</p>
-    <p>🩺 Health check: OK</p>
-</body>
-</html>""".encode('utf-8')
-        )
-    
-    return (
-        HTTPStatus.NOT_FOUND,
-        [("Content-Type", "text/plain")],
-        b"Not Found"
-    )
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
 
 class F1CLIBridge:
     def __init__(self):
@@ -91,12 +34,12 @@ class F1CLIBridge:
         """Start the F1 CLI process"""
         if self.is_cli_running:
             return True
-
+            
         try:
             print("🏎️ Starting F1 CLI process...")
+            
             env = os.environ.copy()
             env['PYTHONIOENCODING'] = 'utf-8'
-            env['PYTHONLEGACYWINDOWSSTDIO'] = '0'
             
             self.cli_process = await asyncio.create_subprocess_exec(
                 sys.executable, "-u", "cli/main.py",
@@ -115,6 +58,7 @@ class F1CLIBridge:
             self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
             
             return True
+            
         except Exception as e:
             print(f"❌ Error starting CLI: {e}")
             self.is_cli_running = False
@@ -127,12 +71,13 @@ class F1CLIBridge:
                 line_bytes = await self.cli_process.stdout.readline()
                 if not line_bytes:
                     break
-                    
+                
                 output = line_bytes.decode('utf-8', errors='replace')
                 await self.message_queue.put({
                     'type': 'output',
                     'data': output
                 })
+                
         except asyncio.CancelledError:
             print("📤 Output reader cancelled")
         except Exception as e:
@@ -148,10 +93,10 @@ class F1CLIBridge:
                     message = await asyncio.wait_for(self.message_queue.get(), timeout=1.0)
                 except asyncio.TimeoutError:
                     continue
-
+                
                 if not self.connected_clients:
                     continue
-
+                
                 json_message = json.dumps(message, ensure_ascii=False)
                 
                 # Send to all clients
@@ -191,22 +136,24 @@ class F1CLIBridge:
                 await self.output_reader_task
             except asyncio.CancelledError:
                 pass
-
+        
         if self.broadcaster_task and not self.broadcaster_task.done():
             self.broadcaster_task.cancel()
             try:
                 await self.broadcaster_task
             except asyncio.CancelledError:
                 pass
-
+        
         # Terminate CLI process
         if self.cli_process:
             try:
                 if self.cli_process.stdin:
                     self.cli_process.stdin.close()
                     await self.cli_process.stdin.wait_closed()
+                
                 self.cli_process.terminate()
                 await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
+                
             except asyncio.TimeoutError:
                 print("⚠️ Force killing CLI process")
                 self.cli_process.kill()
@@ -218,24 +165,17 @@ class F1CLIBridge:
         
         print("✅ CLI process stopped cleanly")
 
-    async def handle_client(self, websocket, path=None):
+    async def handle_client(self, websocket, path):
         """Handle WebSocket client connection"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
-        print(f"🔗 Client connected from {client_addr} to {path or '/'}. Total: {len(self.connected_clients)}")
+        print(f"🔗 Client connected from {client_addr} to {path}. Total: {len(self.connected_clients)}")
         
         try:
             # Start CLI for first client
             if len(self.connected_clients) == 1:
                 await self.start_cli_process()
-
-            # Send welcome message
-            welcome = {
-                'type': 'welcome',
-                'data': '🏎️ Connected to F1 WebSocket Server!\n'
-            }
-            await websocket.send(json.dumps(welcome))
-
+            
             async for message in websocket:
                 try:
                     data = json.loads(message)
@@ -243,81 +183,118 @@ class F1CLIBridge:
                         await self.send_input_to_cli(data.get('data', ''))
                 except json.JSONDecodeError:
                     print(f"⚠️ Invalid JSON: {message}")
-                except Exception as e:
-                    print(f"⚠️ Message handling error: {e}")
-                    
+                
         except websockets.exceptions.ConnectionClosed:
-            print(f"🔌 Client {client_addr} disconnected normally")
+            pass
         except Exception as e:
             print(f"❌ Client error: {e}")
         finally:
             self.connected_clients.discard(websocket)
-            print(f"🔌 Client {client_addr} cleaned up. Remaining: {len(self.connected_clients)}")
+            print(f"🔌 Client {client_addr} disconnected. Remaining: {len(self.connected_clients)}")
             
             # Stop CLI when no clients
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-# ✅ FIXED: Correct process_request for websockets 15.0.1
-def health_check(connection, request):
-    """Handle HTTP health check requests"""
-    print(f"🩺 Health check: {request.path}")
+async def process_request(path, request):
+    """Handle HTTP requests and WebSocket upgrades with CORS"""
     
-    if request.path in ["/", "/health", "/healthz"]:
-        return connection.respond(
-            http.HTTPStatus.OK, 
-            "🏎️ F1 WebSocket Server - OK\n"
+    headers = request.headers
+    origin = headers.get("origin", "")
+    upgrade = headers.get("upgrade", "").lower()
+    connection = headers.get("connection", "").lower()
+    
+    print(f"📥 Request: {path} from {origin}, upgrade: {upgrade}")
+    
+    # ✅ Allow specific origins (replace with your Vercel domain)
+    allowed_origins = [
+        "https://f1-ml-simulator.vercel.app",  # Replace with YOUR Vercel domain
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ]
+    
+    # Handle WebSocket upgrade requests
+    if upgrade == "websocket" and "upgrade" in connection:
+        if origin in allowed_origins or not origin:  # Allow no origin for direct connections
+            print(f"✅ Allowing WebSocket from: {origin}")
+            return None  # Allow WebSocket connection
+        else:
+            print(f"❌ Blocking WebSocket from unauthorized origin: {origin}")
+            return (
+                HTTPStatus.FORBIDDEN,
+                [("Content-Type", "text/plain")],
+                b"WebSocket origin not allowed"
+            )
+    
+    if path == "/" or path == "/health":
+        return (
+            HTTPStatus.OK,
+            [
+                ("Content-Type", "text/html"),
+                ("Access-Control-Allow-Origin", "*"),
+                ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+                ("Access-Control-Allow-Headers", "Content-Type, Origin"),
+            ],
+            f"""<!DOCTYPE html>
+<html>
+<head><title>F1 WebSocket Server</title></head>
+<body>
+    <h1>🏎️ F1 Professional WebSocket Server</h1>
+    <p>✅ Server is running on Railway</p>
+    <p>📡 Port: {PORT}</p>
+    <p>🔌 WebSocket URL: wss://this-domain</p>
+    <p>🩺 Health check: OK</p>
+</body>
+</html>""".encode('utf-8')
         )
     
-    # Return 404 for other paths
-    return connection.respond(
-        http.HTTPStatus.NOT_FOUND,
-        "404 Not Found\n"
+    # Handle other paths
+    return (
+        HTTPStatus.NOT_FOUND,
+        [("Content-Type", "text/plain")],
+        b"Not Found"
     )
 
 async def main():
-    """Main server function"""
+    """Main server function optimized for Railway"""
     bridge = F1CLIBridge()
     
-    print("🔧 Environment PORT:", os.environ.get('PORT', 'Not set'))
-    print("🔧 Using PORT:", PORT)
-    print("🔧 Using HOST:", HOST)
-    print()
-    print("🚀 F1 Professional WebSocket Bridge Server")
-    print(f"📡 WebSocket: {HOST}:{PORT}")
-    print(f"🩺 Health Check: http://{HOST}:{PORT}/health")
-    print("=" * 56)
+    print(f"🚀 F1 Professional WebSocket Bridge Server")
+    print(f"📡 Listening on: {HOST}:{PORT}")
+    print(f"🌐 Railway deployment ready")
+    print("="*60)
     
     try:
-        # Create the websocket server with correct parameters for 15.0.1
-        async with websockets.serve(
+        server = await websockets.serve(
             bridge.handle_client,
             HOST,
             PORT,
-            process_request=health_check,
-            # Railway compatibility settings
-            ping_interval=20,
+            process_request=process_request,  # Handle HTTP and CORS
+            ping_interval=20,  # Keep connections alive
             ping_timeout=10,
             close_timeout=10
-        ) as server:
-            print("✅ WebSocket server ready!")
-            print("🩺 HTTP health checks enabled")
-            print("🌐 Waiting for connections...")
-            
-            # Keep server running
-            await server.wait_closed()
-            
+        )
+        
+        print("✅ WebSocket server started successfully!")
+        print("🩺 Health check endpoint: /")
+        print("🔗 Waiting for connections...")
+        
+        # ✅ Keep server running
+        await server.wait_closed()
+        
     except Exception as e:
         print(f"❌ Server startup error: {e}")
         raise
-    finally:
-        await bridge.stop_cli_process()
 
 if __name__ == "__main__":
     try:
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        
         asyncio.run(main())
+        
     except KeyboardInterrupt:
-        print("\n🛑 Shutting down server...")
+        print("\n🏁 Server stopped by user")
     except Exception as e:
-        print(f"❌ Server error: {e}")
+        print(f"❌ Critical startup error: {e}")
         sys.exit(1)
