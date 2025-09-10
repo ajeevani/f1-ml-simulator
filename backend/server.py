@@ -177,7 +177,6 @@ class F1CLIBridge:
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-# ✅ FIXED: Correct process_request function for Railway health checks
 def health_check(connection, request):
     """Handle HTTP health check requests for Railway"""
     print(f"🩺 Health check request: {request.path}")
@@ -186,12 +185,12 @@ def health_check(connection, request):
         # Return proper HTTP response for health checks
         return connection.respond(
             HTTPStatus.OK,
-            "F1 WebSocket Server is healthy\n",
-            headers=[("Content-Type", "text/plain")]
+            "F1 WebSocket Server is healthy\n"
         )
     
     # For other paths, let WebSocket handle or return 404
     return None
+
 
 async def main():
     """Main server function with Railway health check support"""
