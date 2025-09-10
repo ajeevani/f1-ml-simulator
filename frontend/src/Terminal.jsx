@@ -43,12 +43,22 @@ const Terminal = () => {
     setOutput('🔗 Connecting to F1 Professional Simulator...\n');
 
     try {
-      const ws = new WebSocket('ws://0.0.0.0:8765');
+      const wsUrl = process.env.NODE_ENV === 'production' 
+        ? 'wss://f1-ml-simulator-production.up.railway.app'  // Replace with YOUR Railway domain
+        : 'ws://localhost:8765';
+      
+      console.log('🔗 Attempting to connect to:', wsUrl);
+      
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
-
+      
       ws.onopen = () => {
-        console.log('✅ WebSocket Connected');
+        console.log('✅ Connected to Railway backend');
         setConnected(true);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('❌ WebSocket connection failed:', error);
       };
 
       ws.onmessage = (event) => {
@@ -124,13 +134,7 @@ const Terminal = () => {
       };
 
       ws.onclose = (event) => {
-        console.log('❌ WebSocket closed:', event.code);
-        setConnected(false);
-        wsRef.current = null;
-        
-        if (event.code !== 1000) {
-          setOutput(prev => prev + '\n❌ Connection lost. Backend stopped.\n');
-        }
+        console.log('🔌 Connection closed:', event.code, event.reason);
       };
 
       ws.onerror = () => {

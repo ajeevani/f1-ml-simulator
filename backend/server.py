@@ -10,14 +10,73 @@ import sys
 import os
 import http
 from pathlib import Path
+from http import HTTPStatus
 
-# Production configuration
-PORT = int(os.environ.get("PORT", 8765))
-HOST = "0.0.0.0"
+# ✅ CRITICAL: Use Railway's assigned port
+PORT = int(os.environ.get("PORT", 8765))  # Railway sets PORT environment variable
+HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
 
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.append(str(project_root))
+print(f"🚀 Server starting on {HOST}:{PORT}")
+print(f"📡 WebSocket URL will be: wss://f1-ml-simulator-production.up.railway.app")
+
+async def process_request(path, request):
+    """Handle HTTP requests and CORS for WebSocket connections"""
+    
+    headers = request.headers
+    origin = headers.get("origin", "")
+    
+    # ✅ Allow connections from your Vercel frontend
+    allowed_origins = [
+        "https://f1-ml-simulator.vercel.app",  # Replace with YOUR Vercel domain
+        "http://localhost:5173",             # Local development
+        "http://localhost:3000",             # Alternative local port
+    ]
+    
+    upgrade = headers.get("upgrade", "").lower()
+    connection = headers.get("connection", "").lower()
+    
+    # Handle WebSocket upgrade requests
+    if upgrade == "websocket" and "upgrade" in connection:
+        # ✅ Validate origin for security
+        if origin in allowed_origins:
+            print(f"✅ Allowing WebSocket connection from: {origin}")
+            return None  # Allow the connection
+        else:
+            print(f"❌ Blocking WebSocket connection from unauthorized origin: {origin}")
+            return (
+                HTTPStatus.FORBIDDEN,
+                [("Content-Type", "text/plain")],
+                b"Origin not allowed"
+            )
+    
+    # Handle HTTP requests (health checks, browser visits)
+    if path == "/" or path == "/health":
+        return (
+            HTTPStatus.OK,
+            [
+                ("Content-Type", "text/html"),
+                ("Access-Control-Allow-Origin", "*"),
+                ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+                ("Access-Control-Allow-Headers", "Content-Type"),
+            ],
+            f"""<!DOCTYPE html>
+<html>
+<head><title>F1 WebSocket Server</title></head>
+<body>
+    <h1>🏎️ F1 Professional WebSocket Server</h1>
+    <p>✅ Server is running on Railway</p>
+    <p>🔌 WebSocket URL: wss://this-domain</p>
+    <p>📡 Connect from your React app</p>
+    <p>🩺 Health check: OK</p>
+</body>
+</html>""".encode('utf-8')
+        )
+    
+    return (
+        HTTPStatus.NOT_FOUND,
+        [("Content-Type", "text/plain")],
+        b"Not Found"
+    )
 
 class F1CLIBridge:
     def __init__(self):
