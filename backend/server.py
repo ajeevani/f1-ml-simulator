@@ -15,6 +15,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
+PORT = int(os.environ.get("PORT", 8765))
+HOST = "0.0.0.0"  # Must bind to 0.0.0.0 for Railway
+
 class F1CLIBridge:
     def __init__(self):
         self.cli_process = None
@@ -192,27 +195,23 @@ class F1CLIBridge:
                 await self.stop_cli_process()
 
 async def main():
-    """✅ SIMPLIFIED: Main server function with proper error handling"""
+    """Main server function configured for Railway"""
     bridge = F1CLIBridge()
     
     print("🚀 F1 Professional WebSocket Bridge Server")
-    print("📡 Server: ws://localhost:8765") 
+    print(f"📡 Server: {HOST}:{PORT}")
     print("="*60)
     
     try:
-        async with websockets.serve(bridge.handle_client, "localhost", 8765):
+        # ✅ Use Railway's HOST and PORT
+        async with websockets.serve(bridge.handle_client, HOST, PORT):
             print("✅ WebSocket server ready!")
-            print("🌐 Waiting for frontend connections...")
+            print("🌐 Waiting for connections...")
             
             await asyncio.Future()
             
-    except asyncio.CancelledError:
-        pass
     except Exception as e:
         print(f"❌ Server error: {e}")
-    finally:
-        await bridge.stop_cli_process()
-        print("💤 Server shutdown complete")
 
 if __name__ == "__main__":
     try:
@@ -223,5 +222,3 @@ if __name__ == "__main__":
         
     except KeyboardInterrupt:
         print("\n🏁 Server stopped by user")
-    except Exception as e:
-        print(f"❌ Critical error: {e}")
