@@ -211,10 +211,8 @@ Lap 1/78 - Hamilton leads from pole position!
         })
 
     async def stop_cli_process(self):
-        """Clean shutdown of F1 simulator"""
         logger.info("🛑 Stopping F1 CLI process...")
         self.is_cli_running = False
-        
         # Cancel tasks
         for task_attr in ['output_reader_task', 'broadcaster_task']:
             if hasattr(self, task_attr):
@@ -225,20 +223,24 @@ Lap 1/78 - Hamilton leads from pole position!
                         await task
                     except asyncio.CancelledError:
                         pass
-
         # Terminate CLI process
         if hasattr(self, 'cli_process') and self.cli_process:
             try:
                 if self.cli_process.stdin:
                     self.cli_process.stdin.close()
                     await self.cli_process.stdin.wait_closed()
-                self.cli_process.terminate()
-                await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
+                try:
+                    self.cli_process.terminate()
+                    await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
+                except ProcessLookupError:
+                    pass
             except Exception:
-                if self.cli_process:
+                try:
                     self.cli_process.kill()
+                    await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
+                except ProcessLookupError:
+                    pass
             self.cli_process = None
-        
         logger.info("✅ F1 CLI cleanup complete")
 
     async def handle_client(self, websocket):
@@ -296,10 +298,10 @@ async def websocket_handler(request):
         # Start F1 CLI for first client
         if len(bridge.connected_clients) == 1:
             await bridge.start_cli_process()
-        # Welcome message
+        # Send initial output message the frontend expects
         await ws.send_json({
-            'type': 'welcome',
-            'data': '🏎️ F1 Professional Simulator Connected!\n🏁 Ready for Championship Mode!\n'
+            'type': 'output',
+            'data': '🏎️ F1 Professional Simulator Connected!\n🏁 Ready for Championship Mode!\nType "help" for commands.\n> '
         })
 
         async for msg in ws:
