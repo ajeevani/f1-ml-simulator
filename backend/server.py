@@ -190,40 +190,44 @@ Lap 1/78 - Hamilton leads from pole position!
 # Global F1 bridge instance
 bridge = F1CLIBridge()
 
-# ✅ RAILWAY-SPECIFIC: Minimal health check handler
-def railway_health_check(connection, request):
-    """Railway-compatible health check handler"""
-    logger.info(f"🔍 Railway request: {request.path}")
-    
-    # ✅ CRITICAL: Only handle specific health check paths
-    if request.path in ["/", "/health", "/healthz"]:
-        logger.info("✅ Railway health check OK")
-        return connection.respond(200, "F1 WebSocket Server - Healthy")
-    
-    # ✅ CRITICAL: Return None for all other requests (including WebSocket upgrades)
-    logger.info("🔄 Passing request to WebSocket handler")
-    return None
+def process_request(connection, request):
+    # 1) Clean HTTP health checks
+    if request.path in ("/health", "/"):
+        return connection.respond(200, "F1 WebSocket Server - Healthy\n")
+
+    # 2) WebSocket path: only allow when it's an upgrade
+    if request.path == "/ws":
+        try:
+            hdrs = request.headers
+            connection_hdr = hdrs.get("connection", "").lower()
+            upgrade_hdr = hdrs.get("upgrade", "").lower()
+        except Exception:
+            connection_hdr, upgrade_hdr = "", ""
+
+        # Let websockets library handle proper upgrades
+        if "upgrade" in connection_hdr and upgrade_hdr == "websocket":
+            return None
+
+        # Not an upgrade: make it explicit so proxies don't cache 200 OK here
+        return connection.respond(426, "Upgrade Required\n")
+
+    # 3) Everything else: 404
+    return connection.respond(404, "Not Found\n")
 
 async def main():
-    """Main F1 WebSocket server function"""
     try:
-        logger.info("🚀 Starting F1 WebSocket Server...")
-        logger.info(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-        logger.info(f"🔧 Railway PORT: {PORT}")
-        
-        # ✅ RAILWAY SOLUTION: Single port server
         async with websockets.serve(
-            bridge.handle_client,
+            bridge.handle_client,      # keep your existing handler
             HOST,
             PORT,
-            process_request=railway_health_check,
-            # Railway-optimized settings
-            ping_interval=None,  # Disable ping for Railway
+            process_request=process_request,
+            # Railway-friendly defaults; disable ping/pong to avoid idle interference at proxy
+            ping_interval=None,
             ping_timeout=None,
             compression=None,
-            max_size=2**20,     # 1MB max message
-            max_queue=32
-        ):
+            max_size=2**20,
+            max_queue=32,
+        ): 
             logger.info("✅ F1 WebSocket Server started successfully!")
             logger.info(f"🌍 Railway URL: https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')}")
             logger.info("🩺 Health checks: ENABLED")
