@@ -285,9 +285,10 @@ bridge = F1CLIBridge()
 
 # ---- aiohttp handler for /ws (WebSocket) ----
 async def websocket_handler(request):
+    logger.info(f"WebSocket upgrade requested from {request.remote}. Headers: {dict(request.headers)}")
     ws = web.WebSocketResponse()
     await ws.prepare(request)
-    logger.info(f"🔌 WebSocket connection established from {request.remote}")
+    logger.info(f"WebSocket connection established with {request.remote}")
 
     # Register client
     bridge.connected_clients.add(ws)
@@ -326,9 +327,18 @@ async def healthcheck(request):
 async def notfound(request):
     return web.Response(text="Not Found\n", status=404, content_type="text/plain")
 
+@web.middleware
+async def cors_middleware(request, handler):
+    resp = await handler(request)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Headers'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET,POST'
+    return resp
+
 def create_app():
-    app = web.Application()
+    app = web.Application(middlewares=[cors_middleware])
     app.router.add_get('/ws', websocket_handler)
+    app.router.add_post('/ws', notfound)
     app.router.add_get('/health', healthcheck)
     app.router.add_get('/', healthcheck)
     app.router.add_route('*', '/{tail:.*}', notfound)
