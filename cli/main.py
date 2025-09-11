@@ -1334,10 +1334,6 @@ class FixedF1CLI:
 def main():
     """Main entry point for F1 Professional Simulator"""
     try:
-        if not test_port_binding():
-            print("❌ Port binding test failed")
-            sys.exit(1)
-
         print(f"🔧 Railway Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'Not set')}")
         print(f"🔧 All PORT vars: PORT={os.environ.get('PORT')}")
         cli = FixedF1CLI()
