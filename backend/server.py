@@ -11,10 +11,6 @@ import os
 import traceback
 from pathlib import Path
 from http import HTTPStatus
-import socket
-
-
-
 
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
@@ -26,22 +22,6 @@ print(f"🔧 HOST: {HOST}")
 print(f"🔧 Python: {sys.version}")
 print(f"🔧 CWD: {os.getcwd()}")
 print(f"🔧 Railway ENV: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-
-def test_port_binding():
-    """Test if we can bind to the port"""
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((HOST, PORT))
-        sock.listen(1)
-        sock.close()
-        print(f"✅ Port {PORT} is bindable")
-        return True
-    except Exception as e:
-        print(f"❌ Cannot bind to port {PORT}: {e}")
-        return False
-
-# Add this in main() before starting the server
 
 class F1CLIBridge:
     def __init__(self):
@@ -271,48 +251,36 @@ def health_check(connection, request):
     
     return None
 
-async def main():
-    """Main server function"""
+async def handle_websocket(websocket, path):
+    print(f"🔗 WebSocket connection from {websocket.remote_address}")
     try:
-        bridge = F1CLIBridge()
-        
-        print("="*50)
-        print("🚀 F1 WebSocket Server Starting...")
-        print(f"📡 Address: {HOST}:{PORT}")
-        print(f"🩺 Health: /health")
-        print("="*50)
-        
-        # Start server
-        async with websockets.serve(
-            bridge.handle_client,
-            HOST,
-            PORT,
-            process_request=health_check,
-            ping_interval=30,
-            ping_timeout=10,
-            close_timeout=10
-        ):
-            print("✅ Server started successfully!")
-            print("🌍 Ready for connections")
-            
-            # Keep running
-            try:
-                await asyncio.Future()  # Run forever
-            except KeyboardInterrupt:
-                print("\n🛑 Shutdown requested")
-            finally:
-                await bridge.stop_cli_process()
-                
-    except Exception as e:
-        print(f"❌ FATAL ERROR: {e}")
-        print(f"❌ Traceback:\n{traceback.format_exc()}")
-        sys.exit(1)
+        await websocket.send(json.dumps({'type': 'output', 'data': 'Connected!\n> '}))
+        async for message in websocket:
+            data = json.loads(message)
+            if data.get('type') == 'input':
+                await websocket.send(json.dumps({
+                    'type': 'output', 
+                    'data': f"Echo: {data.get('data', '')}\n> "
+                }))
+    except websockets.exceptions.ConnectionClosed:
+        pass
+
+def http_handler(path, request_headers):
+    if path in ["/", "/health"]:
+        return 200, [], b"OK\n"
+    return None
+
+async def main():
+    print(f"🚀 Starting on {HOST}:{PORT}")
+    
+    async with websockets.serve(
+        handle_websocket, 
+        HOST, 
+        PORT, 
+        process_request=http_handler
+    ):
+        print("✅ Server running")
+        await asyncio.Future()  # Run forever
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\n👋 Goodbye!")
-    except Exception as e:
-        print(f"❌ CRITICAL: {e}")
-        sys.exit(1)
+    asyncio.run(main())
