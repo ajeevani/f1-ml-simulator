@@ -2,3 +2,10 @@ websockets==15.0.1
 aiohttp
 numpy
 tabulate
+pandas
+scikit-learn
+joblib
+matplotlib
+seaborn
+xgboost
+lightgbm
