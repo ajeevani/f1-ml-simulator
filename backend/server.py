@@ -254,22 +254,31 @@ class F1CLIBridge:
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-# ✅ FIXED: Simplified health check that Railway can handle
 def health_check(connection, request):
-    """Handle HTTP health checks - Railway compatible"""
-    logger.info(f"🩺 Health check: {request.path}")
+    """Handle HTTP health checks - properly detect WebSocket upgrades"""
+    logger.info(f"🩺 Request to: {request.path}")
     
+    # ✅ CRITICAL: Check if this is a WebSocket upgrade request
     try:
-        # Always return 200 OK for health checks
-        if request.path in ["/", "/health", "/healthz"]:
-            logger.info("✅ Health check OK")
-            return connection.respond(200, "OK")
-        else:
-            return connection.respond(404, "Not Found")
+        if hasattr(request, 'headers'):
+            connection_header = request.headers.get("connection", "").lower()
+            upgrade_header = request.headers.get("upgrade", "").lower()
+            
+            # If it's a WebSocket upgrade request, DON'T handle it here
+            if "upgrade" in connection_header and upgrade_header == "websocket":
+                logger.info("🔄 WebSocket upgrade detected - passing to websockets library")
+                return None  # Let websockets library handle the upgrade
     except Exception as e:
-        logger.error(f"Health check error: {e}")
-        # Fallback - still return OK
-        return connection.respond(200, "OK")
+        logger.error(f"Header check error: {e}")
+    
+    # Handle regular HTTP requests (health checks)
+    if request.path in ["/", "/health", "/healthz"]:
+        logger.info("✅ HTTP health check - returning 200")
+        return connection.respond(200, "F1 WebSocket Server - Healthy")
+    else:
+        logger.info("❌ HTTP 404 - unknown path")
+        return connection.respond(404, "Not Found")
+
 
 # Global server instance
 bridge = None
