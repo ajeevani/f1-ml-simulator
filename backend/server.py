@@ -11,6 +11,29 @@ import os
 import traceback
 from pathlib import Path
 from http import HTTPStatus
+import socket
+
+def test_port_binding():
+    """Test if we can bind to the port"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((HOST, PORT))
+        sock.listen(1)
+        sock.close()
+        print(f"✅ Port {PORT} is bindable")
+        return True
+    except Exception as e:
+        print(f"❌ Cannot bind to port {PORT}: {e}")
+        return False
+
+# Add this in main() before starting the server
+if not test_port_binding():
+    print("❌ Port binding test failed")
+    sys.exit(1)
+
+print(f"🔧 Railway Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'Not set')}")
+print(f"🔧 All PORT vars: PORT={os.environ.get('PORT')}")
 
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
