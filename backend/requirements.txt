@@ -9,3 +9,9 @@ matplotlib
 seaborn
 xgboost
 lightgbm
+typer
+rich
+click
+pyyaml
+tqdm
+requests
