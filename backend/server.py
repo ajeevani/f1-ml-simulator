@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway HTTP+WebSocket Hybrid
+F1 WebSocket Server - Railway Production with Updated Imports
 """
 import asyncio
 import json
@@ -11,9 +11,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 import subprocess
 from pathlib import Path
+# ✅ FIXED: Use the non-deprecated import
+from websockets.asyncio.server import serve
 import websockets
-from websockets.server import serve
-import socket
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,9 +22,8 @@ logger = logging.getLogger(__name__)
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
 HOST = "0.0.0.0"
-WS_PORT = PORT + 1  # WebSocket on different port
 
-logger.info(f"🚀 Starting F1 Hybrid Server on {HOST}:{PORT}")
+logger.info(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
 
 # Your F1CLIBridge class (preserved exactly as is)
 class F1CLIBridge:
@@ -35,7 +34,6 @@ class F1CLIBridge:
         self.broadcaster_task = None
         self.message_queue = asyncio.Queue()
         self.is_cli_running = False
-        self.cli_available = False
 
     async def start_cli_process(self):
         """Start CLI process if available"""
@@ -119,8 +117,8 @@ class F1CLIBridge:
         
         logger.info("✅ CLI cleanup complete")
 
-    async def handle_client(self, websocket, path):
-        """Handle WebSocket client connections"""
+    async def handle_client(self, websocket):
+        """Handle WebSocket client connections - Updated signature"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
         logger.info(f"🔗 WebSocket client connected: {client_addr}. Total: {len(self.connected_clients)}")
@@ -162,15 +160,14 @@ class F1CLIBridge:
 # Global bridge instance
 bridge = F1CLIBridge()
 
-# ✅ SOLUTION: Use simple HTTP server for health checks
+# ✅ Simple HTTP server for Railway health checks
 class HealthCheckHandler(BaseHTTPRequestHandler):
-    """Simple HTTP handler for Railway health checks"""
+    """HTTP handler for Railway health checks"""
     
     def do_GET(self):
         logger.info(f"🩺 HTTP GET: {self.path}")
         
         if self.path in ['/', '/health', '/healthz']:
-            # Return simple HTTP 200 response
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-Length', '27')
@@ -184,8 +181,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'Not Found')
     
     def log_message(self, format, *args):
-        # Suppress default HTTP logging
-        pass
+        pass  # Suppress default HTTP logging
 
 def start_http_server():
     """Start HTTP server for health checks"""
@@ -197,19 +193,14 @@ def start_http_server():
         logger.error(f"❌ HTTP server error: {e}")
 
 async def start_websocket_server():
-    """Start WebSocket server on different port"""
+    """Start WebSocket server on port 8001"""
+    ws_port = PORT + 1
     try:
-        logger.info(f"🔌 Starting WebSocket server on {HOST}:{WS_PORT}")
+        logger.info(f"🔌 Starting WebSocket server on {HOST}:{ws_port}")
         
-        async with websockets.serve(
-            bridge.handle_client,
-            HOST,
-            WS_PORT,
-            ping_interval=None,
-            ping_timeout=None,
-            compression=None
-        ):
-            logger.info(f"✅ WebSocket server ready on {HOST}:{WS_PORT}")
+        # ✅ Using updated non-deprecated serve function
+        async with serve(bridge.handle_client, HOST, ws_port):
+            logger.info(f"✅ WebSocket server ready on {HOST}:{ws_port}")
             
             # Keep running
             while True:
@@ -224,7 +215,7 @@ async def main():
     try:
         logger.info("🚀 Starting F1 Hybrid Server...")
         
-        # Start HTTP server in thread
+        # Start HTTP server in thread for health checks
         http_thread = threading.Thread(target=start_http_server, daemon=True)
         http_thread.start()
         
