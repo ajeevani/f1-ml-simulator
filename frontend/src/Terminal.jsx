@@ -24,8 +24,8 @@ const Terminal = () => {
 
   const connectToBackend = () => {
     const wsUrl = process.env.NODE_ENV === 'production' 
-      ? 'wss://f1-ml-simulator-production.up.railway.app/ws'
-      : 'ws://localhost:8001/ws';
+  ? 'wss://f1-ml-simulator.onrender.com/ws'
+  : 'ws://localhost:8001/ws';
     
     console.log('🔗 Connecting to:', wsUrl);
 
