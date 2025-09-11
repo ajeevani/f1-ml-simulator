@@ -287,13 +287,19 @@ async def websocket_handler(websocket, path):
     logger.info(f"🔌 WebSocket connection attempt to: {path}")
     await bridge.handle_client(websocket)
 
-# PATCH: Allow healthcheck at "/" and ONLY allow WebSocket on "/ws"
-async def process_request(path, request_headers):
+# PATCH: Synchronous process_request for Railway healthcheck and path control
+def process_request(path, request_headers):
+    # Healthcheck endpoint for Railway (from railway.json)
+    if path == "/health":
+        return (200, [("Content-Type", "text/plain")], b"F1 Simulator OK\n")
+    # Optionally allow root (/) for healthcheck if you use railway.toml
     if path == "/":
         return (200, [("Content-Type", "text/plain")], b"F1 Simulator OK\n")
-    elif path != "/ws":
+    # Only /ws is allowed for WebSocket upgrade
+    if path != "/ws":
         return (404, [("Content-Type", "text/plain")], b"Not Found\n")
-    return None  # Allow /ws to upgrade to WebSocket
+    # For /ws, let websockets do the upgrade
+    return None
 
 async def main():
     try:
