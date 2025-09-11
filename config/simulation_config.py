@@ -13,7 +13,7 @@ class SimulationConfig:
         # Project paths
         self.PROJECT_ROOT = Path(__file__).parent.parent
         self.DATA_DIR = self.PROJECT_ROOT / "data"
-        self.MODELS_DIR = self.PROJECT_ROOT / "models"        # <-- FIXED
+        self.MODELS_DIR = self.PROJECT_ROOT / "models" / "trained"      # <-- FIXED!
 
         # ML Model settings
         self.PRIMARY_MODEL = "gradient_boosting_model.pkl"
@@ -42,7 +42,6 @@ class SimulationConfig:
             self.DATA_DIR,
             self.MODELS_DIR
         ]
-
         for path in required_paths:
             if not path.exists():
                 print(f"⚠️ Warning: Required path does not exist: {path}")
