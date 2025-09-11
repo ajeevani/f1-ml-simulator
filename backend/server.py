@@ -33,7 +33,6 @@ class F1CLIBridge:
         self.is_cli_running = False
         self.cli_available = self._check_cli_availability()
 
-    # ✅ Update the CLI path checking in your server.py
     def _check_cli_availability(self):
         """Check if CLI is available and log the file structure"""
         print("🔍 Checking CLI availability...")
@@ -45,12 +44,12 @@ class F1CLIBridge:
         except Exception as e:
             print(f"❌ Cannot list current directory: {e}")
         
-        # ✅ FIXED: Check for CLI in the correct location
+        # Check for CLI in various locations
         possible_paths = [
-            "./cli/main.py",           # CLI in same level as backend
-            "./backend/cli/main.py",   # If CLI somehow got moved
-            "./main.py",               # Direct in root
-            "/app/cli/main.py"         # Absolute path on Railway
+            "./cli/main.py",
+            "../cli/main.py", 
+            "./main.py",
+            "/app/cli/main.py"
         ]
         
         for path in possible_paths:
@@ -61,7 +60,6 @@ class F1CLIBridge:
         
         print("⚠️ No CLI found - running in WebSocket-only mode")
         return False
-
 
     async def start_cli_process(self):
         """Start CLI process if available"""
