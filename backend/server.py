@@ -13,6 +13,20 @@ from pathlib import Path
 from http import HTTPStatus
 import socket
 
+
+
+
+# Railway configuration
+PORT = int(os.environ.get("PORT", 8000))
+HOST = "0.0.0.0"
+
+print(f"🚀 F1 WebSocket Server Starting...")
+print(f"🔧 PORT: {PORT}")
+print(f"🔧 HOST: {HOST}")
+print(f"🔧 Python: {sys.version}")
+print(f"🔧 CWD: {os.getcwd()}")
+print(f"🔧 Railway ENV: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+
 def test_port_binding():
     """Test if we can bind to the port"""
     try:
@@ -28,23 +42,6 @@ def test_port_binding():
         return False
 
 # Add this in main() before starting the server
-if not test_port_binding():
-    print("❌ Port binding test failed")
-    sys.exit(1)
-
-print(f"🔧 Railway Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'Not set')}")
-print(f"🔧 All PORT vars: PORT={os.environ.get('PORT')}")
-
-# Railway configuration
-PORT = int(os.environ.get("PORT", 8000))
-HOST = "0.0.0.0"
-
-print(f"🚀 F1 WebSocket Server Starting...")
-print(f"🔧 PORT: {PORT}")
-print(f"🔧 HOST: {HOST}")
-print(f"🔧 Python: {sys.version}")
-print(f"🔧 CWD: {os.getcwd()}")
-print(f"🔧 Railway ENV: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
 
 class F1CLIBridge:
     def __init__(self):
