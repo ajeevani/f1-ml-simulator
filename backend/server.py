@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway Compatible
+F1 WebSocket Server - Railway Compatible with /ws path
 """
 import asyncio
 import websockets
@@ -109,12 +109,36 @@ class F1CLIBridge:
 
 bridge = F1CLIBridge()
 
-def health_check(connection, request):
-    logger.info(f"Health check: {request.path}")
+# ✅ CRITICAL FIX: Handle /ws path specifically
+def process_request(connection, request):
+    logger.info(f"Request to: {request.path}")
     
-    if request.path in ["/", "/health"]:
+    # ✅ Handle WebSocket upgrade on /ws path
+    if request.path == "/ws":
+        # Check if it's a proper WebSocket upgrade request
+        try:
+            connection_header = request.headers.get("connection", "").lower()
+            upgrade_header = request.headers.get("upgrade", "").lower()
+            
+            if "upgrade" in connection_header and upgrade_header == "websocket":
+                logger.info("✅ WebSocket upgrade allowed on /ws")
+                return None  # Allow WebSocket upgrade
+            else:
+                # Not a WebSocket upgrade - return 426 Upgrade Required
+                logger.info("❌ Non-WebSocket request to /ws - returning 426")
+                return connection.respond(426, "Upgrade Required")
+        except Exception as e:
+            logger.error(f"Header parsing error: {e}")
+            return connection.respond(426, "Upgrade Required")
+    
+    # ✅ Handle regular HTTP health checks
+    elif request.path in ["/", "/health"]:
+        logger.info("✅ HTTP health check")
         return connection.respond(200, "F1 WebSocket Server - Healthy")
-    return None
+    
+    # ✅ All other paths get 404
+    else:
+        return connection.respond(404, "Not Found")
 
 async def main():
     logger.info(f"🚀 F1 Server starting on {HOST}:{PORT}")
@@ -124,11 +148,13 @@ async def main():
             bridge.handle_client,
             HOST,
             PORT,
-            process_request=health_check,
+            process_request=process_request,
             ping_interval=None,
             ping_timeout=None
         ):
             logger.info("✅ F1 Server ready!")
+            logger.info("🔌 WebSocket endpoint: /ws")
+            logger.info("🩺 Health endpoint: /health")
             while True:
                 await asyncio.sleep(1)
                 
