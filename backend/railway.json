@@ -5,7 +5,7 @@
   },
   "deploy": {
     "startCommand": "python server.py",
-    "healthcheckPath": null,
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 300
   }
 }
