@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway HTTP + WebSocket Hybrid
+F1 WebSocket Server - Railway Fixed Version
 """
 import asyncio
 import websockets
@@ -9,10 +9,6 @@ import sys
 import os
 import logging
 from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
-import socketserver
-from urllib.parse import urlparse
 
 # Railway setup
 logging.basicConfig(level=logging.INFO)
@@ -55,14 +51,68 @@ class F1CLIBridge:
         if self.is_cli_running:
             return True
         
-        # Send F1 mock startup message
-        await self.message_queue.put({
-            'type': 'output',
-            'data': '🏎️ F1 Professional Simulator Loading...\n🏁 Championship Mode Ready\n🚧 CLI module not found - using mock mode\nType "help" for commands\n> '
-        })
-        self.is_cli_running = True
-        self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
-        return True
+        if not self.cli_available:
+            # Send F1 mock startup message
+            await self.message_queue.put({
+                'type': 'output',
+                'data': '🏎️ F1 Professional Simulator Loading...\n🏁 Championship Mode Ready\n🚧 CLI module not found - using mock mode\nType "help" for commands\n> '
+            })
+            self.is_cli_running = True
+            self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
+            return True
+
+        try:
+            logger.info("🏎️ Starting F1 CLI process...")
+            
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            env['PYTHONUNBUFFERED'] = '1'
+            
+            self.cli_process = await asyncio.create_subprocess_exec(
+                sys.executable, "-u", self.cli_path,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=str(project_root),
+                env=env
+            )
+            
+            self.is_cli_running = True
+            logger.info("✅ F1 CLI process started")
+            
+            # Start background tasks
+            self.output_reader_task = asyncio.create_task(self._read_cli_output())
+            self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
+            
+            return True
+        except Exception as e:
+            logger.error(f"❌ CLI start error: {e}")
+            # Fall back to mock mode
+            await self.message_queue.put({
+                'type': 'output', 
+                'data': f'⚠️ CLI unavailable: {str(e)}\n🌐 F1 Server ready in mock mode\nType "help" for commands\n> '
+            })
+            self.is_cli_running = True
+            self.broadcaster_task = asyncio.create_task(self._broadcast_messages())
+            return True
+
+    async def _read_cli_output(self):
+        """Read CLI output and queue for broadcasting"""
+        try:
+            while self.cli_process and self.is_cli_running:
+                line_bytes = await self.cli_process.stdout.readline()
+                if not line_bytes:
+                    break
+                    
+                output = line_bytes.decode('utf-8', errors='replace')
+                await self.message_queue.put({
+                    'type': 'output',
+                    'data': output
+                })
+        except Exception as e:
+            logger.error(f"❌ CLI output error: {e}")
+        finally:
+            self.is_cli_running = False
 
     async def _broadcast_messages(self):
         """Broadcast F1 messages to all clients"""
@@ -89,6 +139,15 @@ class F1CLIBridge:
 
     async def send_input_to_cli(self, input_data):
         """Handle F1 simulator commands"""
+        if hasattr(self, 'cli_process') and self.cli_process and self.cli_process.stdin and self.is_cli_running:
+            try:
+                self.cli_process.stdin.write(f"{input_data}\n".encode('utf-8'))
+                await self.cli_process.stdin.drain()
+                return
+            except Exception as e:
+                logger.error(f"❌ CLI input error: {e}")
+
+        # Mock F1 responses when CLI isn't available
         input_lower = input_data.lower().strip()
         
         if input_lower == 'help':
@@ -150,6 +209,37 @@ Lap 1/78 - Hamilton leads from pole position!
             'data': response
         })
 
+    async def stop_cli_process(self):
+        """Clean shutdown of F1 simulator"""
+        logger.info("🛑 Stopping F1 CLI process...")
+        self.is_cli_running = False
+        
+        # Cancel tasks
+        for task_attr in ['output_reader_task', 'broadcaster_task']:
+            if hasattr(self, task_attr):
+                task = getattr(self, task_attr)
+                if task and not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
+
+        # Terminate CLI process
+        if hasattr(self, 'cli_process') and self.cli_process:
+            try:
+                if self.cli_process.stdin:
+                    self.cli_process.stdin.close()
+                    await self.cli_process.stdin.wait_closed()
+                self.cli_process.terminate()
+                await asyncio.wait_for(self.cli_process.wait(), timeout=3.0)
+            except Exception:
+                if self.cli_process:
+                    self.cli_process.kill()
+            self.cli_process = None
+        
+        logger.info("✅ F1 CLI cleanup complete")
+
     async def handle_client(self, websocket):
         """Handle F1 WebSocket client connections"""
         self.connected_clients.add(websocket)
@@ -174,7 +264,7 @@ Lap 1/78 - Hamilton leads from pole position!
                     if data.get('type') == 'input':
                         await self.send_input_to_cli(data.get('data', ''))
                 except json.JSONDecodeError:
-                    logger.warning(f"⚠️ Invalid JSON from {client_addr}")
+                    logger.warning(f"⚠️ Invalid JSON from {client_addr}: {message}")
                 except Exception as e:
                     logger.error(f"⚠️ Message error from {client_addr}: {e}")
                     
@@ -188,98 +278,60 @@ Lap 1/78 - Hamilton leads from pole position!
             
             # Stop F1 CLI when no clients
             if not self.connected_clients:
-                self.is_cli_running = False
-                if self.broadcaster_task:
-                    self.broadcaster_task.cancel()
+                await self.stop_cli_process()
 
 # Global F1 bridge instance
 bridge = F1CLIBridge()
 
-# ✅ HTTP Handler for Railway Health Checks
-class RailwayHealthHandler(BaseHTTPRequestHandler):
-    """Handle Railway HTTP health checks"""
-    
-    def do_GET(self):
-        logger.info(f"🩺 HTTP health check: {self.path}")
-        
-        if self.path in ['/', '/health', '/healthz']:
-            # Return successful health check
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.send_header('Content-Length', '27')
-            self.end_headers()
-            self.wfile.write(b'F1 WebSocket Server - Healthy')
-            logger.info("✅ Health check successful")
-        else:
-            # Return 404 for unknown paths
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'Not Found')
-    
-    def log_message(self, format, *args):
-        # Suppress default HTTP server logging
-        pass
+async def websocket_handler(websocket, path):
+    logger.info(f"🔌 WebSocket connection attempt to: {path}")
+    await bridge.handle_client(websocket)
 
-def start_http_health_server():
-    """Start HTTP server for Railway health checks"""
-    try:
-        httpd = HTTPServer((HOST, PORT), RailwayHealthHandler)
-        logger.info(f"🩺 HTTP health server started on {HOST}:{PORT}")
-        httpd.serve_forever()
-    except Exception as e:
-        logger.error(f"❌ HTTP health server error: {e}")
-
-async def start_websocket_server():
-    """Start WebSocket server on port 8001"""
-    ws_port = PORT + 1
-    try:
-        logger.info(f"🔌 Starting F1 WebSocket server on {HOST}:{ws_port}")
-        
-        async with websockets.serve(
-            bridge.handle_client,
-            HOST,
-            ws_port,
-            ping_interval=None,
-            ping_timeout=None,
-            compression=None
-        ):
-            logger.info(f"✅ F1 WebSocket server ready on {HOST}:{ws_port}")
-            
-            # Keep running
-            while True:
-                await asyncio.sleep(1)
-                
-    except Exception as e:
-        logger.error(f"❌ WebSocket server error: {e}")
-        raise
+# PATCH: Allow healthcheck at "/" and ONLY allow WebSocket on "/ws"
+async def process_request(path, request_headers):
+    if path == "/":
+        return (200, [("Content-Type", "text/plain")], b"F1 Simulator OK\n")
+    elif path != "/ws":
+        return (404, [("Content-Type", "text/plain")], b"Not Found\n")
+    return None  # Allow /ws to upgrade to WebSocket
 
 async def main():
-    """Main F1 server function - Hybrid HTTP + WebSocket"""
     try:
-        logger.info(f"🚀 F1 Hybrid Server starting...")
+        logger.info(f"🚀 F1 Server starting on {HOST}:{PORT}")
         logger.info(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
         logger.info(f"🔧 Railway PORT: {PORT}")
-        
-        # Start HTTP server in background thread for health checks
-        http_thread = threading.Thread(target=start_http_health_server, daemon=True)
-        http_thread.start()
-        logger.info("🩺 HTTP health server started")
-        
-        # Start WebSocket server on port 8001
-        await start_websocket_server()
-        
+
+        async with websockets.serve(
+            websocket_handler,
+            HOST,
+            PORT,
+            ping_interval=None,
+            ping_timeout=None,
+            compression=None,
+            max_size=2**20,
+            max_queue=32,
+            process_request=process_request  # PATCHED!
+        ):
+            logger.info("✅ F1 WebSocket Server started successfully!")
+            logger.info(f"🌍 Railway URL: https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')}")
+            logger.info("🔌 WebSocket connections: ENABLED") 
+            logger.info("🏎️ F1 Simulator: READY")
+            logger.info("🎯 Waiting for F1 connections...")
+
+            while True:
+                await asyncio.sleep(1)
+
     except Exception as e:
         logger.error(f"❌ Fatal F1 server error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+    finally:
+        await bridge.stop_cli_process()
 
 if __name__ == "__main__":
     try:
-        # Run F1 hybrid server
         asyncio.run(main())
-        
     except KeyboardInterrupt:
         logger.info("👋 F1 Server stopped by user")
     except Exception as e:
