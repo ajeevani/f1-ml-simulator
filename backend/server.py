@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
 """
-F1 WebSocket Server - Railway Production with Updated Imports
+F1 WebSocket Server - Single Port Railway Compatible
 """
 import asyncio
+import websockets
 import json
 import sys
 import os
 import logging
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import threading
-import subprocess
 from pathlib import Path
-# ✅ FIXED: Use the non-deprecated import
-from websockets.asyncio.server import serve
-import websockets
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Railway configuration
+# Railway configuration - SINGLE PORT ONLY
 PORT = int(os.environ.get("PORT", 8000))
 HOST = "0.0.0.0"
 
 logger.info(f"🚀 Starting F1 WebSocket Server on {HOST}:{PORT}")
 
-# Your F1CLIBridge class (preserved exactly as is)
+# Add project root to path for CLI access
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
 class F1CLIBridge:
     def __init__(self):
         self.cli_process = None
@@ -118,7 +116,7 @@ class F1CLIBridge:
         logger.info("✅ CLI cleanup complete")
 
     async def handle_client(self, websocket):
-        """Handle WebSocket client connections - Updated signature"""
+        """Handle WebSocket client connections"""
         self.connected_clients.add(websocket)
         client_addr = websocket.remote_address
         logger.info(f"🔗 WebSocket client connected: {client_addr}. Total: {len(self.connected_clients)}")
@@ -160,82 +158,73 @@ class F1CLIBridge:
 # Global bridge instance
 bridge = F1CLIBridge()
 
-# ✅ Simple HTTP server for Railway health checks
-class HealthCheckHandler(BaseHTTPRequestHandler):
-    """HTTP handler for Railway health checks"""
+# ✅ CRITICAL FIX: Proper Railway-compatible process_request
+def process_request(connection, request):
+    """Handle HTTP health checks while allowing WebSocket upgrades"""
+    logger.info(f"🔍 Request: {request.path}")
     
-    def do_GET(self):
-        logger.info(f"🩺 HTTP GET: {self.path}")
-        
-        if self.path in ['/', '/health', '/healthz']:
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.send_header('Content-Length', '27')
-            self.end_headers()
-            self.wfile.write(b'F1 WebSocket Server - Healthy')
-            logger.info("✅ Health check OK")
-        else:
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b'Not Found')
-    
-    def log_message(self, format, *args):
-        pass  # Suppress default HTTP logging
-
-def start_http_server():
-    """Start HTTP server for health checks"""
+    # ✅ Check if this is a WebSocket upgrade request
     try:
-        httpd = HTTPServer((HOST, PORT), HealthCheckHandler)
-        logger.info(f"🩺 HTTP health server started on {HOST}:{PORT}")
-        httpd.serve_forever()
-    except Exception as e:
-        logger.error(f"❌ HTTP server error: {e}")
-
-async def start_websocket_server():
-    """Start WebSocket server on port 8001"""
-    ws_port = PORT + 1
-    try:
-        logger.info(f"🔌 Starting WebSocket server on {HOST}:{ws_port}")
-        
-        # ✅ Using updated non-deprecated serve function
-        async with serve(bridge.handle_client, HOST, ws_port):
-            logger.info(f"✅ WebSocket server ready on {HOST}:{ws_port}")
+        if hasattr(request, 'headers'):
+            connection_header = request.headers.get("connection", "").lower()
+            upgrade_header = request.headers.get("upgrade", "").lower()
             
-            # Keep running
+            # If it's a WebSocket upgrade, let websockets library handle it
+            if "upgrade" in connection_header and upgrade_header == "websocket":
+                logger.info("🔄 WebSocket upgrade - allowing")
+                return None  # Critical: Return None to allow WebSocket upgrade
+        
+        # Handle HTTP health checks for Railway
+        if request.path in ["/", "/health", "/healthz"]:
+            logger.info("✅ Health check response")
+            return connection.respond(200, "F1 WebSocket Server - Healthy")
+        else:
+            return connection.respond(404, "Not Found")
+            
+    except Exception as e:
+        logger.error(f"❌ Process request error: {e}")
+        # Fallback - allow the request to proceed
+        return None
+
+async def main():
+    """Main server function - SINGLE PORT"""
+    try:
+        logger.info("🚀 Starting F1 WebSocket Server...")
+        logger.info(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+        logger.info(f"🔧 PORT: {PORT}")
+        
+        # ✅ SINGLE PORT SERVER - Railway compatible
+        async with websockets.serve(
+            bridge.handle_client,
+            HOST,
+            PORT,
+            process_request=process_request,
+            # Railway optimized settings
+            ping_interval=None,  # Disable ping for Railway compatibility
+            ping_timeout=None,
+            compression=None
+        ):
+            logger.info("✅ F1 WebSocket Server started successfully!")
+            logger.info(f"🌍 Listening on {HOST}:{PORT}")
+            logger.info("🩺 Health checks enabled")
+            logger.info("🔌 WebSocket connections enabled")
+            logger.info("🎯 Server ready for connections")
+            
+            # Keep server running
             while True:
                 await asyncio.sleep(1)
                 
     except Exception as e:
-        logger.error(f"❌ WebSocket server error: {e}")
-        raise
-
-async def main():
-    """Main function - start both servers"""
-    try:
-        logger.info("🚀 Starting F1 Hybrid Server...")
-        
-        # Start HTTP server in thread for health checks
-        http_thread = threading.Thread(target=start_http_server, daemon=True)
-        http_thread.start()
-        
-        logger.info("🩺 HTTP health server started")
-        
-        # Start WebSocket server
-        await start_websocket_server()
-        
-    except Exception as e:
-        logger.error(f"❌ Server startup failed: {e}")
+        logger.error(f"❌ Fatal error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+    finally:
+        await bridge.stop_cli_process()
 
 if __name__ == "__main__":
     try:
-        logger.info(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-        logger.info(f"🔧 Python: {sys.version}")
-        
-        # Run the hybrid server
+        # Run server
         asyncio.run(main())
         
     except KeyboardInterrupt:
