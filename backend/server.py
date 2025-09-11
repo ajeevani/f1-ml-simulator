@@ -8,9 +8,13 @@ import subprocess
 import json
 import sys
 import os
-import traceback
+import signal
+import logging
 from pathlib import Path
 from http import HTTPStatus
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Railway configuration
 PORT = int(os.environ.get("PORT", 8000))
@@ -251,129 +255,173 @@ def health_check(connection, request):
     
     return None
 
-class F1WebSocketServer:
+class F1Server:
     def __init__(self):
         self.connected_clients = set()
+        self.server = None
+        self.running = True
 
     async def handle_websocket(self, websocket, path):
-        """Handle WebSocket connections"""
+        """Handle WebSocket connections with error recovery"""
+        client_addr = websocket.remote_address
         self.connected_clients.add(websocket)
-        print(f"🔗 WebSocket client connected. Total: {len(self.connected_clients)}")
+        logger.info(f"🔗 WebSocket connected: {client_addr}. Total: {len(self.connected_clients)}")
         
         try:
             # Send welcome message
-            welcome_msg = json.dumps({
+            await websocket.send(json.dumps({
                 'type': 'output',
-                'data': '🏎️ F1 WebSocket Server Connected!\n> '
-            })
-            await websocket.send(welcome_msg)
+                'data': '🏎️ F1 WebSocket Server Connected!\nType "help" for commands.\n> '
+            }))
 
-            # Handle incoming messages
+            # Handle messages
             async for message in websocket:
                 try:
                     data = json.loads(message)
                     if data.get('type') == 'input':
-                        user_input = data.get('data', '')
-                        # Echo response
-                        response = json.dumps({
+                        user_input = data.get('data', '').strip()
+                        
+                        # Simple command handling
+                        if user_input.lower() == 'help':
+                            response = 'Available commands:\n- help: Show this help\n- status: Server status\n- echo <text>: Echo back text\n> '
+                        elif user_input.lower() == 'status':
+                            response = f'✅ Server running\n📊 Connected clients: {len(self.connected_clients)}\n> '
+                        elif user_input.lower().startswith('echo '):
+                            echo_text = user_input[5:]
+                            response = f'Echo: {echo_text}\n> '
+                        else:
+                            response = f'You entered: {user_input}\nType "help" for commands.\n> '
+                        
+                        await websocket.send(json.dumps({
                             'type': 'output',
-                            'data': f"You entered: {user_input}\n> "
-                        })
-                        await websocket.send(response)
+                            'data': response
+                        }))
+                        
                 except json.JSONDecodeError:
-                    error_msg = json.dumps({
+                    await websocket.send(json.dumps({
                         'type': 'output',
-                        'data': 'Invalid input format\n> '
-                    })
-                    await websocket.send(error_msg)
+                        'data': 'Invalid JSON format\n> '
+                    }))
+                except Exception as e:
+                    logger.error(f"Message handling error: {e}")
                     
         except websockets.exceptions.ConnectionClosed:
-            print("🔌 WebSocket client disconnected normally")
+            logger.info(f"🔌 WebSocket disconnected: {client_addr}")
         except Exception as e:
-            print(f"❌ WebSocket error: {e}")
+            logger.error(f"❌ WebSocket error: {e}")
         finally:
             self.connected_clients.discard(websocket)
-            print(f"🔌 Client cleaned up. Remaining: {len(self.connected_clients)}")
+            logger.info(f"🧹 Cleaned up client. Remaining: {len(self.connected_clients)}")
 
-# ✅ FIXED: Correct process_request for websockets 15.0.1
-def handle_http_request(connection, request):
-    """Handle HTTP requests (health checks) properly for websockets 15.0.1"""
-    print(f"🩺 HTTP request to: {request.path}")
-    
-    # ✅ FIXED: Access headers from request object, not as second parameter
-    connection_header = ""
-    upgrade_header = ""
-    
-    # Extract headers from request object
-    if hasattr(request, 'headers'):
-        connection_header = request.headers.get("connection", "").lower()
-        upgrade_header = request.headers.get("upgrade", "").lower()
-    
-    # Check if it's a WebSocket upgrade request
-    if "upgrade" in connection_header and upgrade_header == "websocket":
-        print("🔄 WebSocket upgrade request - passing through")
-        return None  # Let websockets handle the upgrade
-    
-    # Handle health check paths
-    if request.path in ["/", "/health", "/healthz"]:
-        print("✅ Health check - returning HTTP 200")
-        # Return proper HTTP response
-        body = b"F1 WebSocket Server - Healthy\n"
-        return connection.respond(
-            HTTPStatus.OK,
-            body.decode('utf-8')
-        )
-    
-    # Return 404 for other paths
-    return connection.respond(
-        HTTPStatus.NOT_FOUND,
-        "404 Not Found\n"
-    )
+    def health_check(self, connection, request):
+        """Handle HTTP health checks - simplified and robust"""
+        logger.info(f"🩺 Health check: {request.path}")
+        
+        try:
+            if request.path in ["/", "/health", "/healthz"]:
+                # Return simple text response
+                return connection.respond(
+                    200,
+                    "F1 WebSocket Server - Healthy\n"
+                )
+            else:
+                return connection.respond(
+                    404,
+                    "Not Found\n"
+                )
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            # Fallback response
+            return connection.respond(200, "OK\n")
+
+    async def start_server(self):
+        """Start the WebSocket server with proper error handling"""
+        try:
+            logger.info("🚀 Starting WebSocket server...")
+            
+            # Start server with basic configuration
+            self.server = await websockets.serve(
+                self.handle_websocket,
+                HOST,
+                PORT,
+                process_request=self.health_check,
+                ping_interval=None,  # Disable ping for Railway compatibility
+                ping_timeout=None,
+                compression=None
+            )
+            
+            logger.info("✅ Server started successfully!")
+            logger.info(f"🌍 Listening on {HOST}:{PORT}")
+            logger.info("🩺 Health endpoint: /health")
+            
+            return self.server
+            
+        except Exception as e:
+            logger.error(f"❌ Server startup failed: {e}")
+            raise
+
+    async def shutdown(self):
+        """Graceful shutdown"""
+        logger.info("🛑 Shutting down server...")
+        self.running = False
+        
+        if self.server:
+            self.server.close()
+            await self.server.wait_closed()
+        
+        logger.info("✅ Server stopped")
+
+# Global server instance
+server_instance = None
+
+def signal_handler(signum, frame):
+    """Handle shutdown signals"""
+    logger.info(f"📡 Received signal {signum}")
+    if server_instance:
+        asyncio.create_task(server_instance.shutdown())
 
 async def main():
-    """Main server function"""
-    server_instance = F1WebSocketServer()
-    
-    print("=" * 60)
-    print("🚀 F1 WebSocket Server Starting...")
-    print(f"📡 Host: {HOST}")
-    print(f"🔌 Port: {PORT}")
-    print(f"🩺 Health Check: /health")
-    print("=" * 60)
+    """Main server function with comprehensive error handling"""
+    global server_instance
     
     try:
-        # ✅ Start websocket server with corrected HTTP handling
-        async with websockets.serve(
-            server_instance.handle_websocket,
-            HOST,
-            PORT,
-            process_request=handle_http_request,
-            ping_interval=30,
-            ping_timeout=10
-        ):
-            print("✅ Server started successfully!")
-            print("🌍 Ready for connections...")
-            print("🩺 Health endpoint active at /health")
-            
-            # Keep server running forever
-            await asyncio.Future()
+        # Setup signal handlers
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        # Create and start server
+        server_instance = F1Server()
+        server = await server_instance.start_server()
+        
+        logger.info("🎯 Server ready for connections")
+        
+        # Keep server running
+        try:
+            while server_instance.running:
+                await asyncio.sleep(1)
+        except asyncio.CancelledError:
+            logger.info("📡 Server loop cancelled")
             
     except Exception as e:
-        print(f"❌ Server startup error: {e}")
+        logger.error(f"❌ Fatal error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+    finally:
+        if server_instance:
+            await server_instance.shutdown()
 
 if __name__ == "__main__":
     try:
-        print(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-        print(f"🔧 Python: {sys.version}")
+        # Ensure clean event loop
+        if sys.platform == 'win32':
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
         
-        # Run the server
+        # Run server
         asyncio.run(main())
         
     except KeyboardInterrupt:
-        print("\n👋 Server stopped by user")
+        logger.info("👋 Server stopped by user")
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        logger.error(f"❌ Critical error: {e}")
         sys.exit(1)
