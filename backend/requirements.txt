@@ -1,2 +1,4 @@
 websockets==15.0.1
 aiohttp
+numpy
+tabulate
