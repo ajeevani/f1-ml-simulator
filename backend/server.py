@@ -295,40 +295,40 @@ class F1WebSocketServer:
             self.connected_clients.discard(websocket)
             print(f"🔌 Client cleaned up. Remaining: {len(self.connected_clients)}")
 
-# ✅ FIXED: Proper HTTP handler for Railway health checks
-def handle_http_request(path, request_headers):
-    """Handle HTTP requests (health checks) properly"""
-    print(f"🩺 HTTP request to: {path}")
+# ✅ FIXED: Correct process_request for websockets 15.0.1
+def handle_http_request(connection, request):
+    """Handle HTTP requests (health checks) properly for websockets 15.0.1"""
+    print(f"🩺 HTTP request to: {request.path}")
+    
+    # ✅ FIXED: Access headers from request object, not as second parameter
+    connection_header = ""
+    upgrade_header = ""
+    
+    # Extract headers from request object
+    if hasattr(request, 'headers'):
+        connection_header = request.headers.get("connection", "").lower()
+        upgrade_header = request.headers.get("upgrade", "").lower()
     
     # Check if it's a WebSocket upgrade request
-    connection = request_headers.get("connection", "").lower()
-    upgrade = request_headers.get("upgrade", "").lower()
-    
-    if "upgrade" in connection and upgrade == "websocket":
-        # This is a websocket upgrade - let websockets library handle it
+    if "upgrade" in connection_header and upgrade_header == "websocket":
         print("🔄 WebSocket upgrade request - passing through")
-        return None
+        return None  # Let websockets handle the upgrade
     
-    # Handle HTTP health checks
-    if path in ["/", "/health", "/healthz"]:
+    # Handle health check paths
+    if request.path in ["/", "/health", "/healthz"]:
         print("✅ Health check - returning HTTP 200")
-        # Return proper HTTP response for health checks
+        # Return proper HTTP response
         body = b"F1 WebSocket Server - Healthy\n"
-        headers = [
-            ("Content-Type", "text/plain"),
-            ("Content-Length", str(len(body))),
-            ("Connection", "close")
-        ]
-        return HTTPStatus.OK, headers, body
+        return connection.respond(
+            HTTPStatus.OK,
+            body.decode('utf-8')
+        )
     
-    # 404 for other paths
-    body = b"404 Not Found\n"
-    headers = [
-        ("Content-Type", "text/plain"),
-        ("Content-Length", str(len(body))),
-        ("Connection", "close")
-    ]
-    return HTTPStatus.NOT_FOUND, headers, body
+    # Return 404 for other paths
+    return connection.respond(
+        HTTPStatus.NOT_FOUND,
+        "404 Not Found\n"
+    )
 
 async def main():
     """Main server function"""
@@ -342,7 +342,7 @@ async def main():
     print("=" * 60)
     
     try:
-        # ✅ Start websocket server with proper HTTP handling
+        # ✅ Start websocket server with corrected HTTP handling
         async with websockets.serve(
             server_instance.handle_websocket,
             HOST,
