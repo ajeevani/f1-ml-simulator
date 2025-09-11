@@ -12,8 +12,10 @@ class SimulationConfig:
     def __init__(self):
         # Project paths
         self.PROJECT_ROOT = Path(__file__).parent.parent
-        self.DATA_DIR = self.PROJECT_ROOT / "data"
-        self.MODELS_DIR = self.PROJECT_ROOT / "models" / "trained"      # <-- FIXED!
+        self.DATA_DIR = self.PROJECT_ROOT / "data"   # <--- Used throughout!
+
+        # Model folder (fix for your earlier request)
+        self.MODELS_DIR = self.PROJECT_ROOT / "models" / "trained"
 
         # ML Model settings
         self.PRIMARY_MODEL = "gradient_boosting_model.pkl"
@@ -23,7 +25,7 @@ class SimulationConfig:
         # Simulation settings
         self.DEFAULT_RACE_LAPS = 50
         self.DEFAULT_WEATHER = "dry"
-        self.RANDOM_SEED = None  # Set for reproducible results
+        self.RANDOM_SEED = None
 
         # CLI settings
         self.CLI_COLORS = True
@@ -37,7 +39,6 @@ class SimulationConfig:
         self._validate_paths()
 
     def _validate_paths(self):
-        """Validate that required paths exist"""
         required_paths = [
             self.DATA_DIR,
             self.MODELS_DIR
@@ -48,7 +49,6 @@ class SimulationConfig:
 
     @property
     def model_files(self):
-        """Get list of required model files"""
         return [
             self.PRIMARY_MODEL,
             self.ENSEMBLE_MODEL,
@@ -58,9 +58,7 @@ class SimulationConfig:
         ]
 
     def get_model_path(self, model_name: str) -> Path:
-        """Get full path to model file"""
         return self.MODELS_DIR / model_name
 
     def get_data_path(self, data_file: str) -> Path:
-        """Get full path to data file"""
         return self.DATA_DIR / data_file
