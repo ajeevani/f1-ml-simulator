@@ -283,68 +283,61 @@ Lap 1/78 - Hamilton leads from pole position!
 
 bridge = F1CLIBridge()
 
-async def websocket_handler(websocket, path):
-    logger.info(f"🔌 WebSocket connection attempt to: {path}")
-    await bridge.handle_client(websocket)
+# ---- aiohttp handler for /ws (WebSocket) ----
+async def websocket_handler(request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+    logger.info(f"🔌 WebSocket connection established from {request.remote}")
 
-# ---- HTTP Healthcheck server using aiohttp ----
+    # Register client
+    bridge.connected_clients.add(ws)
+    try:
+        # Start F1 CLI for first client
+        if len(bridge.connected_clients) == 1:
+            await bridge.start_cli_process()
+        # Welcome message
+        await ws.send_json({
+            'type': 'welcome',
+            'data': '🏎️ F1 Professional Simulator Connected!\n🏁 Ready for Championship Mode!\n'
+        })
+
+        async for msg in ws:
+            if msg.type == web.WSMsgType.TEXT:
+                try:
+                    data = json.loads(msg.data)
+                    if data.get('type') == 'input':
+                        await bridge.send_input_to_cli(data.get('data', ''))
+                except Exception as e:
+                    logger.error(f"WebSocket message error: {e}")
+            elif msg.type == web.WSMsgType.ERROR:
+                logger.error(f'WebSocket connection closed with exception {ws.exception()}')
+    finally:
+        bridge.connected_clients.discard(ws)
+        logger.info(f"🧹 F1 Client cleaned up. Remaining: {len(bridge.connected_clients)}")
+        if not bridge.connected_clients:
+            await bridge.stop_cli_process()
+
+    return ws
+
+# ---- HTTP handlers ----
 async def healthcheck(request):
     return web.Response(text="F1 Simulator OK\n", content_type="text/plain")
 
 async def notfound(request):
     return web.Response(text="Not Found\n", status=404, content_type="text/plain")
 
-def start_healthcheck_server():
+def create_app():
     app = web.Application()
+    app.router.add_get('/ws', websocket_handler)
     app.router.add_get('/health', healthcheck)
     app.router.add_get('/', healthcheck)
     app.router.add_route('*', '/{tail:.*}', notfound)
-    runner = web.AppRunner(app)
-    return runner
-
-# ---- Main runner ----
-async def main():
-    # Start HTTP healthcheck server
-    runner = start_healthcheck_server()
-    await runner.setup()
-    site = web.TCPSite(runner, HOST, PORT)
-    await site.start()
-    logger.info(f"✅ HTTP healthcheck server running on {HOST}:{PORT}")
-
-    # Start WebSocket server (on /ws only)
-    ws_server = await websockets.serve(
-        websocket_handler,
-        HOST,
-        PORT,
-        ping_interval=None,
-        ping_timeout=None,
-        compression=None,
-        max_size=2**20,
-        max_queue=32,
-        process_request=lambda path, headers: None if path == "/ws" else (404, [("Content-Type", "text/plain")], b"Not Found\n")
-    )
-
-    logger.info("✅ F1 WebSocket Server started successfully!")
-    logger.info(f"🌍 Railway URL: https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')}")
-    logger.info("🔌 WebSocket connections: ENABLED") 
-    logger.info("🏎️ F1 Simulator: READY")
-    logger.info("🎯 Waiting for F1 connections...")
-
-    try:
-        while True:
-            await asyncio.sleep(1)
-    except Exception as e:
-        logger.error(f"❌ Fatal F1 server error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-    finally:
-        await bridge.stop_cli_process()
-        await runner.cleanup()
+    return app
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        app = create_app()
+        web.run_app(app, host=HOST, port=PORT)
     except KeyboardInterrupt:
         logger.info("👋 F1 Server stopped by user")
     except Exception as e:
