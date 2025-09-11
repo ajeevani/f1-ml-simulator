@@ -251,36 +251,129 @@ def health_check(connection, request):
     
     return None
 
-async def handle_websocket(websocket, path):
-    print(f"🔗 WebSocket connection from {websocket.remote_address}")
-    try:
-        await websocket.send(json.dumps({'type': 'output', 'data': 'Connected!\n> '}))
-        async for message in websocket:
-            data = json.loads(message)
-            if data.get('type') == 'input':
-                await websocket.send(json.dumps({
-                    'type': 'output', 
-                    'data': f"Echo: {data.get('data', '')}\n> "
-                }))
-    except websockets.exceptions.ConnectionClosed:
-        pass
+class F1WebSocketServer:
+    def __init__(self):
+        self.connected_clients = set()
 
-def http_handler(path, request_headers):
-    if path in ["/", "/health"]:
-        return 200, [], b"OK\n"
-    return None
+    async def handle_websocket(self, websocket, path):
+        """Handle WebSocket connections"""
+        self.connected_clients.add(websocket)
+        print(f"🔗 WebSocket client connected. Total: {len(self.connected_clients)}")
+        
+        try:
+            # Send welcome message
+            welcome_msg = json.dumps({
+                'type': 'output',
+                'data': '🏎️ F1 WebSocket Server Connected!\n> '
+            })
+            await websocket.send(welcome_msg)
+
+            # Handle incoming messages
+            async for message in websocket:
+                try:
+                    data = json.loads(message)
+                    if data.get('type') == 'input':
+                        user_input = data.get('data', '')
+                        # Echo response
+                        response = json.dumps({
+                            'type': 'output',
+                            'data': f"You entered: {user_input}\n> "
+                        })
+                        await websocket.send(response)
+                except json.JSONDecodeError:
+                    error_msg = json.dumps({
+                        'type': 'output',
+                        'data': 'Invalid input format\n> '
+                    })
+                    await websocket.send(error_msg)
+                    
+        except websockets.exceptions.ConnectionClosed:
+            print("🔌 WebSocket client disconnected normally")
+        except Exception as e:
+            print(f"❌ WebSocket error: {e}")
+        finally:
+            self.connected_clients.discard(websocket)
+            print(f"🔌 Client cleaned up. Remaining: {len(self.connected_clients)}")
+
+# ✅ FIXED: Proper HTTP handler for Railway health checks
+def handle_http_request(path, request_headers):
+    """Handle HTTP requests (health checks) properly"""
+    print(f"🩺 HTTP request to: {path}")
+    
+    # Check if it's a WebSocket upgrade request
+    connection = request_headers.get("connection", "").lower()
+    upgrade = request_headers.get("upgrade", "").lower()
+    
+    if "upgrade" in connection and upgrade == "websocket":
+        # This is a websocket upgrade - let websockets library handle it
+        print("🔄 WebSocket upgrade request - passing through")
+        return None
+    
+    # Handle HTTP health checks
+    if path in ["/", "/health", "/healthz"]:
+        print("✅ Health check - returning HTTP 200")
+        # Return proper HTTP response for health checks
+        body = b"F1 WebSocket Server - Healthy\n"
+        headers = [
+            ("Content-Type", "text/plain"),
+            ("Content-Length", str(len(body))),
+            ("Connection", "close")
+        ]
+        return HTTPStatus.OK, headers, body
+    
+    # 404 for other paths
+    body = b"404 Not Found\n"
+    headers = [
+        ("Content-Type", "text/plain"),
+        ("Content-Length", str(len(body))),
+        ("Connection", "close")
+    ]
+    return HTTPStatus.NOT_FOUND, headers, body
 
 async def main():
-    print(f"🚀 Starting on {HOST}:{PORT}")
+    """Main server function"""
+    server_instance = F1WebSocketServer()
     
-    async with websockets.serve(
-        handle_websocket, 
-        HOST, 
-        PORT, 
-        process_request=http_handler
-    ):
-        print("✅ Server running")
-        await asyncio.Future()  # Run forever
+    print("=" * 60)
+    print("🚀 F1 WebSocket Server Starting...")
+    print(f"📡 Host: {HOST}")
+    print(f"🔌 Port: {PORT}")
+    print(f"🩺 Health Check: /health")
+    print("=" * 60)
+    
+    try:
+        # ✅ Start websocket server with proper HTTP handling
+        async with websockets.serve(
+            server_instance.handle_websocket,
+            HOST,
+            PORT,
+            process_request=handle_http_request,
+            ping_interval=30,
+            ping_timeout=10
+        ):
+            print("✅ Server started successfully!")
+            print("🌍 Ready for connections...")
+            print("🩺 Health endpoint active at /health")
+            
+            # Keep server running forever
+            await asyncio.Future()
+            
+    except Exception as e:
+        print(f"❌ Server startup error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        print(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+        print(f"🔧 Python: {sys.version}")
+        
+        # Run the server
+        asyncio.run(main())
+        
+    except KeyboardInterrupt:
+        print("\n👋 Server stopped by user")
+    except Exception as e:
+        print(f"❌ Fatal error: {e}")
+        sys.exit(1)
