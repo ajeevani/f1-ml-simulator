@@ -9,6 +9,7 @@ import sys
 import os
 import logging
 from pathlib import Path
+from aiohttp import web
 
 # Railway setup
 logging.basicConfig(level=logging.INFO)
@@ -280,53 +281,58 @@ Lap 1/78 - Hamilton leads from pole position!
             if not self.connected_clients:
                 await self.stop_cli_process()
 
-# Global F1 bridge instance
 bridge = F1CLIBridge()
 
 async def websocket_handler(websocket, path):
     logger.info(f"🔌 WebSocket connection attempt to: {path}")
     await bridge.handle_client(websocket)
 
-# PATCH: Synchronous process_request for Railway healthcheck and path control
-def process_request(path, request_headers):
-    # Healthcheck endpoint for Railway (from railway.json)
-    if path == "/health":
-        return (200, [("Content-Type", "text/plain")], b"F1 Simulator OK\n")
-    # Optionally allow root (/) for healthcheck if you use railway.toml
-    if path == "/":
-        return (200, [("Content-Type", "text/plain")], b"F1 Simulator OK\n")
-    # Only /ws is allowed for WebSocket upgrade
-    if path != "/ws":
-        return (404, [("Content-Type", "text/plain")], b"Not Found\n")
-    # For /ws, let websockets do the upgrade
-    return None
+# ---- HTTP Healthcheck server using aiohttp ----
+async def healthcheck(request):
+    return web.Response(text="F1 Simulator OK\n", content_type="text/plain")
 
+async def notfound(request):
+    return web.Response(text="Not Found\n", status=404, content_type="text/plain")
+
+def start_healthcheck_server():
+    app = web.Application()
+    app.router.add_get('/health', healthcheck)
+    app.router.add_get('/', healthcheck)
+    app.router.add_route('*', '/{tail:.*}', notfound)
+    runner = web.AppRunner(app)
+    return runner
+
+# ---- Main runner ----
 async def main():
+    # Start HTTP healthcheck server
+    runner = start_healthcheck_server()
+    await runner.setup()
+    site = web.TCPSite(runner, HOST, PORT)
+    await site.start()
+    logger.info(f"✅ HTTP healthcheck server running on {HOST}:{PORT}")
+
+    # Start WebSocket server (on /ws only)
+    ws_server = await websockets.serve(
+        websocket_handler,
+        HOST,
+        PORT,
+        ping_interval=None,
+        ping_timeout=None,
+        compression=None,
+        max_size=2**20,
+        max_queue=32,
+        process_request=lambda path, headers: None if path == "/ws" else (404, [("Content-Type", "text/plain")], b"Not Found\n")
+    )
+
+    logger.info("✅ F1 WebSocket Server started successfully!")
+    logger.info(f"🌍 Railway URL: https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')}")
+    logger.info("🔌 WebSocket connections: ENABLED") 
+    logger.info("🏎️ F1 Simulator: READY")
+    logger.info("🎯 Waiting for F1 connections...")
+
     try:
-        logger.info(f"🚀 F1 Server starting on {HOST}:{PORT}")
-        logger.info(f"🔧 Environment: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-        logger.info(f"🔧 Railway PORT: {PORT}")
-
-        async with websockets.serve(
-            websocket_handler,
-            HOST,
-            PORT,
-            ping_interval=None,
-            ping_timeout=None,
-            compression=None,
-            max_size=2**20,
-            max_queue=32,
-            process_request=process_request  # PATCHED!
-        ):
-            logger.info("✅ F1 WebSocket Server started successfully!")
-            logger.info(f"🌍 Railway URL: https://{os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'localhost:8000')}")
-            logger.info("🔌 WebSocket connections: ENABLED") 
-            logger.info("🏎️ F1 Simulator: READY")
-            logger.info("🎯 Waiting for F1 connections...")
-
-            while True:
-                await asyncio.sleep(1)
-
+        while True:
+            await asyncio.sleep(1)
     except Exception as e:
         logger.error(f"❌ Fatal F1 server error: {e}")
         import traceback
@@ -334,6 +340,7 @@ async def main():
         sys.exit(1)
     finally:
         await bridge.stop_cli_process()
+        await runner.cleanup()
 
 if __name__ == "__main__":
     try:
