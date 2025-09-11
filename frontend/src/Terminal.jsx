@@ -24,8 +24,8 @@ const Terminal = () => {
 
   const connectToBackend = () => {
     const wsUrl = process.env.NODE_ENV === 'production' 
-      ? 'wss://f1-ml-simulator-production.up.railway.app'  // ✅ UPDATE THIS TO YOUR ACTUAL RAILWAY URL
-      : 'ws://localhost:8765';
+      ? 'wss://f1-ml-simulator-production.up.railway.app:8001'  // ✅ UPDATE THIS TO YOUR ACTUAL RAILWAY URL
+      : 'ws://localhost:8001';
     
     console.log('🔗 Connecting to:', wsUrl);
 
