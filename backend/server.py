@@ -20,10 +20,10 @@ project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
 CLI_PATHS = [
-    "./cli/main.py",
-    "../cli/main.py",
-    "/app/cli/main.py",
-    str(project_root / "cli" / "main.py")
+    os.path.join(project_root, "cli", "main.py"),
+    os.path.join(os.path.dirname(__file__), "cli", "main.py"),
+    "/opt/render/project/src/cli/main.py",
+    "./cli/main.py"
 ]
 
 @web.middleware
