@@ -4,7 +4,7 @@ A web-based Formula 1 racing simulator that uses machine learning to predict rac
 
 ## What This App Does
 
-This F1 simulator lets you create races with drivers from any F1 era and see realistic results. The app uses ML models trained on real F1 data to predict how different drivers would perform against each other, even across different time periods.
+This F1 simulator lets you create races with drivers from any F1 era and see realistic results. The app uses ML models trained on real F1 data to predict how different drivers from across different time periods, would perform against each other in a 2025 F1 Car and Track.
 
 ## Key Features
 
@@ -16,7 +16,7 @@ This F1 simulator lets you create races with drivers from any F1 era and see rea
 
 ## Try the App
 
-**Live Demo:** [Deploy on Render + Vercel for best results]
+**Live Demo:** https://f1-ml-simulator.vercel.app/
 
 **Local Setup:**
 Backend (Terminal 1)
@@ -93,7 +93,7 @@ The app includes API diagnostic tools to check data source reliability:
 ## The Data
 
 ### Driver Database
-- **120+ Drivers** across all F1 eras
+- **220+ Drivers** across all F1 eras
 - **Skill Ratings** from 25-100 based on real performance
 - **Career Statistics** including wins, podiums, championships
 - **Era Adjustments** to compare drivers fairly across decades
@@ -106,7 +106,7 @@ The app includes API diagnostic tools to check data source reliability:
 
 ### ML Training Data
 - **70+ Years** of F1 race results (1950-2025)
-- **10,000+ Races** used for training
+- **20,000+ Races** used for training
 - **50+ Features** per driver including experience, form, car performance
 - **Cross-Validation** ensures model accuracy
 
@@ -142,41 +142,6 @@ npm run dev
 5. **Open Browser**
 Visit http://localhost:5173 to use the simulator
 
-## Project Structure
-
-F1_ML/
-├── frontend/ # React web interface
-│ ├── src/
-│ │ ├── Terminal.jsx # Main terminal component
-│ │ └── Terminal.css # Retro styling
-│ └── package.json
-├── backend/ # Python WebSocket server
-│ ├── server.py # Main server file
-│ └── requirements.txt # Python dependencies
-├── cli/ # Core race engine
-│ └── main.py # Race logic and ML predictions
-├── models/ # Trained ML models
-│ └── trained/ # Model files (.pkl format)
-│ ├── ensemble_model.pkl
-│ ├── random_forest_model.pkl
-│ ├── gradient_boosting_model.pkl
-│ ├── lightgbm_model.pkl
-│ ├── svr_model.pkl
-│ └── extra_trees_model.pkl
-├── data/ # Processed race data
-│ ├── enhanced/ # Enhanced datasets
-│ └── ml_ready/ # Training datasets
-├── ml_pipeline/ # ML training scripts
-│ ├── enhanced_feature_engineering.py
-│ └── advanced_ml_trainer.py
-├── api_checker/ # API diagnostic tools
-│ └── f1_api_diagnostic.py
-├── config/ # Configuration files
-├── simulator/ # Core simulation engine
-├── tests/ # Test files
-└── utils/ # Utility functions
-
-
 ## Model Performance
 
 Our ML models achieve high accuracy on historical data:
@@ -191,16 +156,3 @@ Our ML models achieve high accuracy on historical data:
 ## License
 
 This project is licensed under the MIT License.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## Contact
-
-- **GitHub**: [https://github.com/ajeevani/f1-ml-simulator](https://github.com/ajeevani/f1-ml-simulator)
-- **Live Demo**: [f1-ml-simulator.vercel.app](https://f1-ml-simulator.vercel.app)
