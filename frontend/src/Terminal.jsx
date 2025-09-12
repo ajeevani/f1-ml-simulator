@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './Terminal.css';
 
 function hashString(str) {
   let hash = 0;
@@ -158,6 +159,30 @@ const Terminal = () => {
     }
   }, [connected]);
 
+  useEffect(() => {
+    const handleFocus = () => document.body.style.overflow = 'hidden';
+    const handleBlur = () => document.body.style.overflow = '';
+    if (inputRef.current) {
+      inputRef.current.addEventListener('focus', handleFocus);
+      inputRef.current.addEventListener('blur', handleBlur);
+    }
+    return () => {
+      if (inputRef.current) {
+        inputRef.current.removeEventListener('focus', handleFocus);
+        inputRef.current.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+      setConnected(true);
+      setOutput('🏁 Welcome to F1 ML Simulator!\nAvailable Tracks:\nMonaco\nSilverstone\nMonza\nSpa\nSuzuka\n');
+    }, 1300);
+  }, []);
+
+
   const handleInput = (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -213,69 +238,45 @@ const Terminal = () => {
   }
 
   return (
-    <div className="terminal-window">
-      <div className="window-header">
-        {/* Desktop: show text, Mobile: icon only */}
-        <div className="window-title desktop-only">🏎️ F1 Professional ML Simulator v2.0</div>
-        <div className="window-title mobile-only">🏎️</div>
-        <div className="window-controls">
-          <button className="source-code-btn" onClick={openSourceCode} title="View source code on GitHub">
-            <span className="icon-only">📁</span>
-            <span className="desktop-only">Source</span>
-          </button>
-          <button className="control-btn minimize" title="Minimize">−</button>
-          <button className="control-btn maximize" title="Maximize">□</button>
-          <button className="control-btn close" title="Close">✕</button>
-        </div>
+    <div className="terminal-card">
+      <div className="terminal-header">
+        <span className="terminal-logo">🏎️</span>
+        <span className="terminal-title">F1 ML Simulator</span>
+        <button className="icon-btn" title="Source Code" onClick={() => window.open('https://github.com/ajeevani/f1-ml-simulator', '_blank')}>📁</button>
       </div>
-      <div className="terminal-body" ref={terminalRef}>
-        {/* Show loading state before backend connects */}
-        {loading && (
-          <div className="connection-status loading-message">
-            <p>⏳ Waiting for Render backend connection...</p>
-            <p className="mobile-only">Please wait...</p>
+      <div className="terminal-main">
+        {loading ? (
+          <div className="terminal-loading">
+            <span className="loader"></span>
+            <span>⏳ Waiting for Render backend connection...</span>
+          </div>
+        ) : (
+          <div className="terminal-output">
+            {output.split('\n').map((line, i) => (
+              <div key={i} className="terminal-line">{line}</div>
+            ))}
           </div>
         )}
-        {/* Main terminal content */}
-        {!loading && (
-          <>
-            <pre className="terminal-content">
-              {isTrackList(output)
-                ? output.split('\n').map((line, idx) =>
-                    line.trim() !== '' ? (
-                      <div key={idx} className="track-list-row">{line}</div>
-                    ) : null
-                  )
-                : output}
-            </pre>
-            {connected ? (
-              <div className="input-line">
-                <span className="prompt"></span>
-                <input
-                  ref={inputRef}
-                  className="terminal-input"
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleInput}
-                  autoFocus
-                />
-              </div>
-            ) : (
-              <div className="connection-status">
-                <p>🔌 F1 Simulator Backend Disconnected</p>
-                <p className="desktop-only">Start backend: <code>python backend/server.py</code></p>
-                <button className="reconnect-btn" onClick={handleManualReconnect}>
-                  <span className="icon-only">🔄</span>
-                  <span className="desktop-only">Reconnect</span>
-                </button>
-              </div>
-            )}
-          </>
-        )}
       </div>
+      {connected && (
+        <div className="terminal-inputbar">
+          <input
+            ref={inputRef}
+            className="terminal-input"
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Type command..."
+            autoFocus
+            enterKeyHint="send"
+          />
+          <button className="icon-btn" title="Send">
+            ➤
+          </button>
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default Terminal;
