@@ -430,12 +430,6 @@
   animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% { opacity: 0.7; }
-  50% { opacity: 1; }
-  100% { opacity: 0.7; }
-}
-
 .connection-status p {
   margin: 10px 0;
   text-shadow: 0 0 5px rgba(255, 107, 107, 0.5);
@@ -483,4 +477,90 @@
   .source-code-btn span {
     display: none; /* Hide text on very small screens, keep icon */
   }
+}
+
+/* ...existing styles... */
+
+/* Desktop only (>= 768px) */
+.desktop-only {
+  display: inline-block;
+}
+.mobile-only {
+  display: none;
+}
+
+/* Mobile only (< 768px) */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .mobile-only {
+    display: inline-block !important;
+    font-size: 19px;
+    padding-left: 2px;
+  }
+  .window-title {
+    font-size: 17px;
+    padding-left: 2px;
+  }
+  .window-controls .source-code-btn span.desktop-only {
+    display: none !important;
+  }
+  .window-controls .source-code-btn .icon-only {
+    font-size: 20px;
+    padding-right: 0px;
+  }
+  .source-code-btn {
+    padding: 4px 8px;
+    font-size: 15px;
+  }
+  .control-btn {
+    width: 22px;
+    height: 22px;
+    font-size: 18px;
+    margin-left: 2px;
+  }
+  .terminal-body {
+    padding: 6px;
+  }
+  .terminal-content,
+  .input-line {
+    font-size: 13px;
+  }
+}
+
+/* Even smaller screens */
+@media (max-width: 480px) {
+  .window-title {
+    font-size: 14px;
+  }
+  .terminal-content,
+  .input-line {
+    font-size: 11px;
+  }
+  .source-code-btn {
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  .window-controls {
+    gap: 2px;
+  }
+}
+
+/* Loading message style */
+.loading-message {
+  color: #ffde33;
+  text-align: center;
+  font-size: 18px;
+  padding: 24px 0;
+  font-family: 'Share Tech Mono', monospace;
+  background: #222;
+  border-radius: 8px;
+  margin: 18px 8px;
+  animation: pulse 1.7s infinite;
+}
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
