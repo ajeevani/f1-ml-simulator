@@ -565,53 +565,63 @@
   100% { opacity: 0.6; }
 }
 
+/* --- Improved mobile layout --- */
 @media (max-width: 768px) {
   .terminal-window {
-    width: 96vw;
-    max-width: 475px;      /* Don't fill entire edge, stay centered */
-    margin: 2vh auto;
-    border-radius: 10px;
+    width: 92vw;
+    max-width: 375px;   /* Much narrower than before */
+    margin: 4vh auto;   /* Extra vertical and horizontal margin */
+    border-radius: 12px;
+    background: #0a0a0a;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.16);
     border-width: 2px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.14);
-    background: #101010;
+    border-style: solid;
+    border-color: #222;
+    overflow: hidden;
+    min-height: 320px;
+  }
+  .window-header {
+    padding: 0 10px;
+    height: 34px;
   }
   .terminal-body {
-    padding: 16px 12px;    /* More space inside, especially sides */
+    padding: 18px 12px; /* More inner padding for breathing room */
   }
-  .terminal-content {
-    font-size: 13px;        /* Slightly smaller, readable */
-    line-height: 1.6;
+  .terminal-content,
+  .input-line,
+  .prompt,
+  .terminal-input {
+    font-size: 12px;    /* Slightly reduced, still readable */
+    line-height: 1.7;
     letter-spacing: 0.2px;
-    word-break: break-word;
-    padding: 0 2px;
-  }
-  .track-list-row {
-    display: block;
-    width: 100%;
-    padding: 8px 0;
-    border-bottom: 1px solid #222;
-    font-size: 13px;
-    text-align: center;
   }
 }
 
-/* Even tighter screens */
+/* Even smaller screens (e.g. older iPhones) */
 @media (max-width: 480px) {
   .terminal-window {
-    max-width: 98vw;
-    margin: 1vh auto;
-    border-radius: 8px;
+    width: 97vw;
+    max-width: 320px;   /* Even narrower for smallest phones */
+    margin: 2vh auto;
+    border-radius: 10px;
+    min-height: 220px;
   }
   .terminal-body {
     padding: 12px 5px;
   }
-  .terminal-content {
-    font-size: 12px;
-    line-height: 1.7;
-    padding: 0 1px;
+  .terminal-content,
+  .input-line,
+  .prompt,
+  .terminal-input {
+    font-size: 10.5px;
+    line-height: 1.8;
   }
-  .track-list-row {
-    font-size: 12px;
-    padding: 6px 0;
-  }
+}
+
+/* Make sure the terminal is always centered */
+#root {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
