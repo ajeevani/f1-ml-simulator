@@ -240,11 +240,8 @@ class F1SimulationEngine:
             raise
     
     def _load_track_data(self):
-        """Load track data"""
         try:
-            data_dir = Path(self.config.DATA_DIR)
-            tracks_df = pd.read_parquet(data_dir / 'enhanced' / 'enhanced_tracks.parquet')
-            
+            tracks_df = pd.read_parquet(self.config.get_tracks_path())
             self.tracks_data = {
                 row['track_id']: {
                     'name': row['track_name'],
@@ -258,19 +255,14 @@ class F1SimulationEngine:
                 }
                 for _, row in tracks_df.iterrows()
             }
-            
             print(f"✅ Loaded {len(self.tracks_data)} tracks")
-            
         except Exception as e:
             logger.error(f"Error loading track data: {e}")
             self.tracks_data = {}
-    
+
     def _load_car_data(self):
-        """Load car data"""
         try:
-            data_dir = Path(self.config.DATA_DIR)
-            cars_df = pd.read_parquet(data_dir / 'enhanced' / 'enhanced_cars_2025.parquet')
-            
+            cars_df = pd.read_parquet(self.config.get_cars_path())
             self.cars_data = {
                 row['constructor_id']: {
                     'name': row['constructor_name'],
@@ -281,26 +273,19 @@ class F1SimulationEngine:
                 }
                 for _, row in cars_df.iterrows()
             }
-            
             print(f"✅ Loaded {len(self.cars_data)} cars")
-            
         except Exception as e:
             logger.error(f"Error loading car data: {e}")
             self.cars_data = {}
-    
+
     def _load_drivers_database(self):
-        """Load drivers database"""
         try:
-            data_dir = Path(self.config.DATA_DIR)
-            drivers_df = pd.read_parquet(data_dir / 'ml_ready' / 'full_enhanced_dataset.parquet')
-            
+            drivers_df = pd.read_parquet(self.config.get_drivers_path())
             for _, row in drivers_df.iterrows():
                 driver_name = row.get('driver_name', '')
                 season = row.get('season', 0)
-                
                 if driver_name not in self.drivers_database:
                     self.drivers_database[driver_name] = {}
-                
                 self.drivers_database[driver_name][season] = {
                     'skill_rating': row.get('skill_rating', 50),
                     'constructor_id': row.get('constructor_id', ''),
@@ -308,9 +293,7 @@ class F1SimulationEngine:
                     'points': row.get('points', 0),
                     'wins': row.get('wins', 0)
                 }
-            
             print(f"✅ Loaded database with {len(self.drivers_database)} drivers")
-            
         except Exception as e:
             logger.error(f"Error loading drivers database: {e}")
             self.drivers_database = {}
