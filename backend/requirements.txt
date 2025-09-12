@@ -15,3 +15,5 @@ click
 pyyaml
 tqdm
 requests
+pyarrow
+fastparquet
