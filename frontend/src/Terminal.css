@@ -3,10 +3,11 @@ body {
   font-family: 'Share Tech Mono', monospace;
 }
 
-/* App-like terminal card */
+/* App-like terminal card, dynamic width */
 .terminal-card {
-  width: 95vw;
-  max-width: 370px;
+  width: 96vw;
+  min-width: 230px;
+  max-width: 650px;
   margin: 6vh auto;
   background: #171717;
   border-radius: 18px;
@@ -15,62 +16,149 @@ body {
   flex-direction: column;
   overflow: hidden;
   border: 1.5px solid #111;
+  transition: max-width 0.2s;
 }
 
+/* Wider on large screens */
+@media (min-width: 1200px) {
+  .terminal-card {
+    max-width: 900px;
+  }
+}
+
+/* Mobile: slightly bigger */
+@media (max-width: 768px) {
+  .terminal-card {
+    max-width: 420px;
+    margin: 5vh auto;
+    border-radius: 14px;
+  }
+  .terminal-header {
+    height: 44px;
+    padding: 0 12px;
+  }
+  .terminal-main {
+    min-height: 160px;
+    max-height: 340px;
+    padding: 18px 7px;
+  }
+  .terminal-line {
+    font-size: 13.5px;
+    padding: 5px 0;
+  }
+  .terminal-inputbar {
+    padding: 11px 10px;
+  }
+  .terminal-input {
+    font-size: 13.5px;
+    padding: 8px 10px;
+  }
+}
+
+/* Even smaller screens (old phones) */
+@media (max-width: 480px) {
+  .terminal-card {
+    max-width: 98vw;
+    margin: 2vh auto;
+    border-radius: 10px;
+    min-height: 170px;
+  }
+  .terminal-main {
+    min-height: 100px;
+    max-height: 170px;
+    padding: 10px 2px;
+  }
+  .terminal-line {
+    font-size: 12px;
+    padding: 3px 0;
+  }
+  .terminal-header {
+    padding: 7px 4px;
+  }
+  .terminal-title {
+    font-size: 14px;
+  }
+  .terminal-inputbar {
+    padding: 8px 5px;
+  }
+  .terminal-input {
+    font-size: 11.5px;
+    padding: 6px 7px;
+  }
+}
+
+/* Header */
 .terminal-header {
   display: flex;
   align-items: center;
-  padding: 12px 18px;
+  padding: 14px 20px;
   background: #1d1d1d;
   border-bottom: 1px solid #222;
 }
 
-.terminal-logo {
-  font-size: 22px;
-  margin-right: 10px;
-}
-
 .terminal-title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   flex: 1;
   color: #0ed145;
   letter-spacing: 1px;
+  transition: font-size 0.2s;
 }
 
+/* Buttons */
 .icon-btn {
   background: none;
   border: none;
   color: #0ed145;
   font-size: 20px;
-  margin-left: 6px;
+  margin-left: 8px;
   padding: 2px 6px;
   border-radius: 7px;
   cursor: pointer;
   transition: background 0.16s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 .icon-btn:active {
   background: #222;
 }
-
-.terminal-main {
-  min-height: 160px;
-  max-height: 320px;
-  overflow-y: auto;
-  padding: 18px 10px;
+.btn-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #aaffc0;
+  letter-spacing: 0.5px;
+  margin-left: 2px;
 }
 
+/* Hide text labels on mobile */
+@media (max-width: 700px) {
+  .btn-label {
+    display: none;
+  }
+}
+
+/* Main scroll area */
+.terminal-main {
+  min-height: 180px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 22px 16px;
+  background: none;
+  transition: max-height 0.2s, min-height 0.2s;
+}
+
+/* Loading state */
 .terminal-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: #e7e96e;
-  font-size: 15px;
+  font-size: 16px;
   padding: 30px 0;
   gap: 10px;
 }
-
 .loader {
   width: 24px;
   height: 24px;
@@ -84,79 +172,48 @@ body {
   to { transform: rotate(360deg);}
 }
 
+/* Output lines */
 .terminal-output {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
 .terminal-line {
-  font-size: 12.5px;
+  font-size: 15.5px;
   color: #e0ffe4;
   background: none;
   border-radius: 5px;
-  padding: 4px 0;
+  padding: 7px 0;
   text-align: center;
   word-break: break-word;
   letter-spacing: 0.3px;
+  transition: font-size 0.2s;
 }
 
-/* Sticky input bar at the bottom */
+/* Input bar */
 .terminal-inputbar {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: 15px 20px;
   background: #202020;
   border-top: 1px solid #222;
 }
-
 .terminal-input {
   flex: 1;
-  font-size: 12.5px;
+  font-size: 15.5px;
   background: #191919;
   color: #b0ffbb;
   border: none;
   border-radius: 8px;
-  padding: 8px 12px;
-  margin-right: 8px;
+  padding: 9px 14px;
+  margin-right: 10px;
   outline: none;
   box-shadow: none;
   transition: background 0.14s;
 }
 .terminal-input:focus {
   background: #222;
-}
-
-/* Responsive for smallest screens */
-@media (max-width: 480px) {
-  .terminal-card {
-    max-width: 99vw;
-    margin: 2vh auto;
-    border-radius: 13px;
-  }
-  .terminal-main {
-    padding: 10px 2px;
-    min-height: 120px;
-    max-height: 210px;
-  }
-  .terminal-line {
-    font-size: 11px;
-    padding: 3px 0;
-  }
-  .terminal-header {
-    padding: 9px 6px;
-  }
-  .terminal-title {
-    font-size: 13px;
-  }
-  .terminal-inputbar {
-    padding: 9px 8px;
-  }
-  .terminal-input {
-    font-size: 11px;
-    padding: 7px 8px;
-  }
 }
 
 /* Prevent unwanted scroll */
