@@ -279,24 +279,49 @@ class F1SimulationEngine:
             self.cars_data = {}
 
     def _load_drivers_database(self):
-        try:
-            drivers_df = pd.read_parquet(self.config.get_drivers_path())
-            for _, row in drivers_df.iterrows():
-                driver_name = row.get('driver_name', '')
-                season = row.get('season', 0)
-                if driver_name not in self.drivers_database:
-                    self.drivers_database[driver_name] = {}
-                self.drivers_database[driver_name][season] = {
-                    'skill_rating': row.get('skill_rating', 50),
-                    'constructor_id': row.get('constructor_id', ''),
-                    'championship_position': row.get('championship_position', 20),
-                    'points': row.get('points', 0),
-                    'wins': row.get('wins', 0)
-                }
-            print(f"✅ Loaded database with {len(self.drivers_database)} drivers")
-        except Exception as e:
-            logger.error(f"Error loading drivers database: {e}")
-            self.drivers_database = {}
+        """Load drivers from all relevant files in both enhanced and ml_ready folders."""
+
+        # Load drivers from enhanced
+        enhanced_driver_path = Path(self.config.DATA_DIR) / 'enhanced' / 'enhanced_drivers.parquet'
+        ml_ready_driver_path = Path(self.config.DATA_DIR) / 'ml_ready' / 'full_enhanced_dataset.parquet'
+
+        drivers_database = {}
+
+        # Try loading from enhanced first (if exists)
+        if enhanced_driver_path.exists():
+            enhanced_df = pd.read_parquet(enhanced_driver_path)
+            for _, row in enhanced_df.iterrows():
+                name = row.get('driver_name') or row.get('name') or row.get('driver_id')
+                if name:
+                    if name not in drivers_database:
+                        drivers_database[name] = {}
+                    # Use available fields
+                    drivers_database[name][row.get('season', 0)] = {
+                        'skill_rating': row.get('skill_rating', 50),
+                        'constructor_id': row.get('constructor_id', row.get('team', '')),
+                        'championship_position': row.get('championship_position', 20),
+                        'points': row.get('points', 0),
+                        'wins': row.get('wins', 0)
+                    }
+
+        # Try loading from ml_ready (if exists)
+        if ml_ready_driver_path.exists():
+            ready_df = pd.read_parquet(ml_ready_driver_path)
+            for _, row in ready_df.iterrows():
+                name = row.get('driver_name') or row.get('name') or row.get('driver_id')
+                if name:
+                    if name not in drivers_database:
+                        drivers_database[name] = {}
+                    drivers_database[name][row.get('season', 0)] = {
+                        'skill_rating': row.get('skill_rating', 50),
+                        'constructor_id': row.get('constructor_id', row.get('team', '')),
+                        'championship_position': row.get('championship_position', 20),
+                        'points': row.get('points', 0),
+                        'wins': row.get('wins', 0)
+                    }
+
+        self.drivers_database = drivers_database
+        print(f"✅ Loaded database with {len(self.drivers_database)} drivers from both enhanced and ml_ready.")
     
     def predict_driver_skill(self, driver_features: Dict[str, float], use_ensemble: bool = True) -> Dict[str, float]:
         """Predict driver skill rating using trained models"""
