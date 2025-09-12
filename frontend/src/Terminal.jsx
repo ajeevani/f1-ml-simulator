@@ -178,7 +178,6 @@ const Terminal = () => {
     setTimeout(() => {
       setLoading(false);
       setConnected(true);
-      setOutput('🏁 Welcome to F1 ML Simulator!\nAvailable Tracks:\nMonaco\nSilverstone\nMonza\nSpa\nSuzuka\n');
     }, 1300);
   }, []);
 
