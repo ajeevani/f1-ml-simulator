@@ -208,6 +208,10 @@ const Terminal = () => {
     window.open(GITHUB_URL, '_blank', 'noopener,noreferrer');
   };
 
+  function isTrackList(text) {
+    return text.includes('Available F1 Circuits:') || text.match(/^\s*\d+\.\s+\w+/m);
+  }
+
   return (
     <div className="terminal-window">
       <div className="window-header">
@@ -235,7 +239,15 @@ const Terminal = () => {
         {/* Main terminal content */}
         {!loading && (
           <>
-            <pre className="terminal-content">{output}</pre>
+            <pre className="terminal-content">
+              {isTrackList(output)
+                ? output.split('\n').map((line, idx) =>
+                    line.trim() !== '' ? (
+                      <div key={idx} className="track-list-row">{line}</div>
+                    ) : null
+                  )
+                : output}
+            </pre>
             {connected ? (
               <div className="input-line">
                 <span className="prompt"></span>

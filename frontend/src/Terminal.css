@@ -564,3 +564,54 @@
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+
+@media (max-width: 768px) {
+  .terminal-window {
+    width: 96vw;
+    max-width: 475px;      /* Don't fill entire edge, stay centered */
+    margin: 2vh auto;
+    border-radius: 10px;
+    border-width: 2px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.14);
+    background: #101010;
+  }
+  .terminal-body {
+    padding: 16px 12px;    /* More space inside, especially sides */
+  }
+  .terminal-content {
+    font-size: 13px;        /* Slightly smaller, readable */
+    line-height: 1.6;
+    letter-spacing: 0.2px;
+    word-break: break-word;
+    padding: 0 2px;
+  }
+  .track-list-row {
+    display: block;
+    width: 100%;
+    padding: 8px 0;
+    border-bottom: 1px solid #222;
+    font-size: 13px;
+    text-align: center;
+  }
+}
+
+/* Even tighter screens */
+@media (max-width: 480px) {
+  .terminal-window {
+    max-width: 98vw;
+    margin: 1vh auto;
+    border-radius: 8px;
+  }
+  .terminal-body {
+    padding: 12px 5px;
+  }
+  .terminal-content {
+    font-size: 12px;
+    line-height: 1.7;
+    padding: 0 1px;
+  }
+  .track-list-row {
+    font-size: 12px;
+    padding: 6px 0;
+  }
+}
