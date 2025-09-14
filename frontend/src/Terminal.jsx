@@ -271,14 +271,14 @@ const Terminal = () => {
               <div className="input-break-line"></div>
               
               <div className="terminal-prompt" onClick={handlePromptClick}>
-                <span className="prompt-symbol">></span>
+                <span className="prompt-symbol"></span>
                 <span className={`cursor ${inputFocused ? 'blink' : ''}`}>|</span>
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   onFocus={handleInputFocus}
                   onBlur={handleInputBlur}
                   className="prompt-input"
