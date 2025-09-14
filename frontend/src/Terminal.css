@@ -196,6 +196,10 @@ body {
   gap: 8px;
   padding: 12px 0;
   cursor: text;
+  background: rgba(0, 255, 136, 0.05);
+  border-radius: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .prompt-symbol {
@@ -203,6 +207,18 @@ body {
   font-weight: bold;
   font-size: 16px;
   min-width: 20px;
+}
+
+.cursor {
+  color: #00ff88;
+  font-weight: bold;
+  font-size: 16px;
+  width: 2px;
+  display: inline-block;
+}
+
+.cursor.blink {
+  animation: blink 1s infinite;
 }
 
 .prompt-input {
@@ -214,22 +230,13 @@ body {
   font-family: inherit;
   font-size: 14px;
   line-height: 1.4;
+  margin-left: 4px;
 }
 
 .prompt-input::placeholder {
   color: #6b7280;
 }
 
-.cursor {
-  color: #00ff88;
-  font-weight: bold;
-  font-size: 16px;
-  margin-left: -2px;
-}
-
-.cursor.blink {
-  animation: blink 1s infinite;
-}
 
 @keyframes blink {
   0%, 50% { opacity: 1; }
@@ -307,6 +314,13 @@ body {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+  .input-break-line {
+    margin: 8px 0;
+  }
+  
+  .terminal-prompt {
+    padding: 10px;
+  }
   .terminal-container {
     padding: 10px;
   }
@@ -371,6 +385,14 @@ body {
 }
 
 @media (max-width: 480px) {
+  .input-break-line {
+    margin: 6px 0;
+  }
+  
+  .terminal-prompt {
+    padding: 8px;
+  }
+  
   .terminal-container {
     padding: 5px;
   }
@@ -427,4 +449,11 @@ body {
   .prompt-input {
     font-size: 15px;
   }
+}
+
+.input-break-line {
+  height: 1px;
+  background: rgba(79, 172, 254, 0.1);
+  margin: 10px 0;
+  width: 100%;
 }

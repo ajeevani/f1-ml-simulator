@@ -267,26 +267,33 @@ const Terminal = () => {
 
           {/* Input Prompt */}
           {connected && !renderColdStart && (
-            <div className="terminal-prompt" onClick={handlePromptClick}>
-              <span className="prompt-symbol"></span>
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                className="prompt-input"
-                placeholder="Enter command..."
-                autoComplete="off"
-                spellCheck="false"
-              />
-              <span className={`cursor ${inputFocused ? 'blink' : ''}`}>|</span>
-              <button className="send-btn" onClick={sendInput} title="Send Command">
-                <i className="fas fa-paper-plane"></i>
-              </button>
-            </div>
+            <>
+              <div className="input-break-line"></div>
+              
+              <div className="terminal-prompt" onClick={handlePromptClick}>
+                <span className="prompt-symbol">></span>
+                <span className={`cursor ${inputFocused ? 'blink' : ''}`}>|</span>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  className="prompt-input"
+                  placeholder="Enter command..."
+                  autoComplete="off"
+                  spellCheck="false"
+                />
+                <button className="send-btn" onClick={sendInput} title="Send Command">
+                  <i className="fas fa-paper-plane"></i>
+                </button>
+              </div>
+              
+              {/* Break line after input */}
+              <div className="input-break-line"></div>
+            </>
           )}
         </div>
 
